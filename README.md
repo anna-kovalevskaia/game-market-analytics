@@ -16,9 +16,11 @@ An analytical system for researching the gaming market based on open-source data
 - [Project Structure](#project-structure)
 - [Limitations](#limitations)
 
+
 ## Goal
 
 Investigate historical data from the gaming industry and analyze how popularity metrics, genre characteristics, and media interest correlate with indirect commercial performance - across studios of different scales.
+
 
 ## Research Questions
 
@@ -28,6 +30,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 - **Black swans** - Identifying cases that achieved high popularity despite general historical trends or minimal starting resources.
 - **Media hype (Attention Decay Rate)** - Analyzing the relationship between Twitch viewing hours and Steam CCU dynamics, and measuring how quickly media hype decays.
 - **Developer scale** - Studying release density and audience retention across studio categories: major publishers, mid-tier studios, and indie developers.
+
 
 ## Data Sources
 
@@ -51,6 +54,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | Reddit & YouTube API | Community sentiment and discussion activity |
 | Google Trends API | Global search interest dynamics |
 
+
 ## Tech Stack
 
 | Tool | Role | Why this, not alternatives |
@@ -60,7 +64,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | dbt | Transformation layer | Data-as-Code: Staging -> Core -> Marts, with auto-generated lineage graph, documentation, Jinja macros, and data quality tests. SQL models are readable and maintainable unlike raw ETL scripts. |
 | Google Sheets | Cloud buffer | Lightweight, free cloud layer for publishing dashboard-ready marts from local DWH to the BI layer - no server required. Only pre-aggregated, dashboard-ready data is pushed to the cloud. |
 | Tableau Public | Visualization | Connected to Google Sheets for automatic daily refresh of the public dashboard. |
-| Azure Static Web Apps | Frontend hosting | Public hosting for embedding the BI dashboard via iframe. |
+| Azure Static Web Apps | Frontend hosting | Public hosting for embedding the BI dashboard via iframe. Tableau Public is inaccessible in some regions (including Russia) - Azure Static Web Apps ensures the dashboard is reachable from anywhere in the world. |
 
 ## Architecture
 
@@ -92,6 +96,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 
 All heavy computation (ETL, dbt materializations, columnar compression) runs locally on ClickHouse. Only compact, dashboard-ready marts are pushed to the cloud layer. This keeps infrastructure cost at $0 while making the dashboard publicly accessible.
 
+
 ## Development Roadmap
 
 **Phase 1 - Local-First MVP** <- current
@@ -118,10 +123,12 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 - Response as chart or table depending on result size
 - Continue.dev integration for development assistance inside IDE
 
+
 ## Development Environment
 
 - **IDE:** PyCharm
 - **AI Assistant:** Continue.dev with Qwen2.5-Coder (local, via Ollama) - for contextual dbt schema generation, DAG boilerplate, and SQL optimization
+
 
 ## Project Structure
 
@@ -135,6 +142,7 @@ game-market-analytics/
   |- sheets/             <- Google Sheets sync scripts
   +- docs/               <- Architecture diagrams
 ```
+
 
 ## Limitations
 
