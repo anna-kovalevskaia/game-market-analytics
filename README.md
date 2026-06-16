@@ -136,11 +136,32 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 game-market-analytics/
   |- README.md
   |- README.ru.md
-  |- ingestion/          <- Python ETL scripts per source
-  |- dags/               <- Airflow DAGs
-  |- dbt/                <- dbt models (staging, core, marts)
-  |- sheets/             <- Google Sheets sync scripts
-  +- docs/               <- Architecture diagrams
+  |- infra/
+  |    |- README.md
+  |    |- docker-compose.yml
+  |    |- Dockerfile.airflow
+  |    |- Dockerfile.dbt
+  |    +- .env.example
+  |- dags/
+  |    |- README.md
+  |    |- sources/
+  |    |    |- steam/
+  |    |    |- steamspy/
+  |    |    |- igdb/
+  |    |    +- twitch/
+  |    |- exports_bi_marts/
+  |    +- *.py
+  |- dbt/
+  |    |- README.md
+  |    |- dbt_project.yml
+  |    |- profiles.yml
+  |    |- models/
+  |    |    |- staging/
+  |    |    |- core/
+  |    |    +- marts/
+  |    |- macros/
+  |    +- tests/
+  +- docs/
 ```
 
 
