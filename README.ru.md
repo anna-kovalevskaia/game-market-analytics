@@ -129,11 +129,32 @@
 game-market-analytics/
   |- README.md
   |- README.ru.md
-  |- ingestion/          <- Python ETL скрипты по источникам
-  |- dags/               <- Airflow DAGs
-  |- dbt/                <- dbt модели (staging, core, marts)
-  |- sheets/             <- скрипты синхронизации с Google Sheets
-  +- docs/               <- архитектурные схемы
+  |- infra/
+  |    |- README.md
+  |    |- docker-compose.yml
+  |    |- Dockerfile.airflow
+  |    |- Dockerfile.dbt
+  |    +- .env.example
+  |- dags/
+  |    |- README.md
+  |    |- sources/
+  |    |    |- steam/
+  |    |    |- steamspy/
+  |    |    |- igdb/
+  |    |    +- twitch/
+  |    |- exports_bi_marts/
+  |    +- *.py
+  |- dbt/
+  |    |- README.md
+  |    |- dbt_project.yml
+  |    |- profiles.yml
+  |    |- models/
+  |    |    |- staging/
+  |    |    |- core/
+  |    |    +- marts/
+  |    |- macros/
+  |    +- tests/
+  +- docs/
 ```
 
 ## Ограничения
