@@ -119,9 +119,11 @@
 - Интеграция с Continue.dev для помощи в разработке проекта внутри IDE
 
 ## Среда разработки
-
-- **IDE:** PyCharm
-- **AI-ассистент:** Continue.dev с Qwen2.5-Coder (локально, через Ollama) - для генерации dbt-схем, шаблонов DAG и оптимизации SQL
+- **IDE:** VS Code
+- **AI-ассистент:** Continue.dev с Qwen2.5-Coder (локально, через Ollama) — для генерации dbt-схем, шаблонов DAG и оптимизации SQL
+- **Контейнеризация:** Docker Desktop — для оркестрации Airflow, ClickHouse и dbt
+- **Python:** 3.12 в изолированном виртуальном окружении (.venv)
+- **Настройка среды:** см. [infra/README.md](infra/README.md)
 
 ## Структура проекта
 
