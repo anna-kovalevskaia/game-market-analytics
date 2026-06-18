@@ -6,13 +6,11 @@ Follow these steps to prepare the local development environment for this project
 
 ## Table of Contents
 
-* [1. Install Base Software](https://www.google.com/search?q=%231-install-base-software)
-* [2. Install Required VS Code Extensions](https://www.google.com/search?q=%232-install-required-vs-code-extensions)
-* [3. Clone the Repository](https://www.google.com/search?q=%233-clone-the-repository)
-* [4. Create a Python Virtual Environment](https://www.google.com/search?q=%234-create-a-python-virtual-environment)
-* [5. Select Python Interpreter in VS Code](https://www.google.com/search?q=%235-select-python-interpreter-in-vs-code)
-* [6. Auto-Activate and Install dbt](https://www.google.com/search?q=%236-auto-activate-and-install-dbt)
-* [7. Verification](https://www.google.com/search?q=%237-verification)
+* [1. Install Base Software](#1-install-base-software)
+* [2. Install Required VS Code Extensions](#2-install-required-vs-code-extensions)
+* [3. Clone the Repository](#3-clone-the-repository)
+* [4. Configure Python Virtual Environment](#4-configure-python-virtual-environment)
+* [5. Install dbt and Verify Setup](#5-install-dbt-and-verify-setup)
 
 ---
 
@@ -22,13 +20,13 @@ Follow these steps to prepare the local development environment for this project
 
 Download and install the editor from the official website:
 
-* [Download VS Code](https://www.google.com/search?q=https://code.visualstudio.com/)
+* [Download VS Code](https://code.visualstudio.com/)
 
 ### Docker Desktop
 
 Download and install the Docker engine backend. Ensure that Docker Desktop is running in the background:
 
-* [Download Docker Desktop](https://www.google.com/search?q=https://www.docker.com/products/docker-desktop/)
+* [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 > 💡 **Note:** The project relies on Docker to orchestrate heavy services like Apache Airflow, dbt runtime transformations, and the ClickHouse OLAP database.
 
@@ -52,16 +50,15 @@ Open your system terminal, clone the repository, and step into the project's roo
 ```bash
 git clone https://github.com/<your-username>/game-market-analytics.git
 cd game-market-analytics
-
 ```
 
 ---
 
-## 4. Create a Python Virtual Environment
-
-Before creating the environment, verify that Python (3.10+ recommended) is installed on your machine.
+## 4. Configure Python Virtual Environment
 
 ### Check Python Version
+
+Before creating the environment, verify that Python 3.12 is installed on your machine:
 
 ```bash
 # On Windows (using the Python Launcher)
@@ -69,10 +66,12 @@ py --version
 
 # On macOS / Linux
 python3 --version
-
 ```
 
-> ⚠️ **Important (Windows):** If your terminal states that Python is not found, download the official installer from [Python.org](https://www.google.com/search?q=https://www.python.org/downloads/). Run the installer and **strictly check the box that says "Add python.exe to PATH"** on the very first screen.
+> ⚠️ **Important (Windows):** If your terminal states that Python is not found,  
+> download Python 3.12 directly from [Python.org](https://www.python.org/downloads/release/python-3120/).  
+> Run the installer and **strictly check the box that says "Add python.exe to PATH"**  
+> on the very first screen.
 
 ### Create the Environment
 
@@ -83,15 +82,10 @@ Run the following command inside the root `game-market-analytics` directory to g
 py -3.12 -m venv .venv
 
 # On macOS / Linux
-python3 -m venv .venv
-
+python3.12 -m venv .venv
 ```
 
-*(Note: You do not need to manually run any activation scripts via terminal commands. VS Code will handle this automatically in the next steps).*
-
----
-
-## 5. Select Python Interpreter in VS Code
+### Select Python Interpreter in VS Code
 
 Tell VS Code to link your workspace with the newly created virtual environment:
 
@@ -99,29 +93,32 @@ Tell VS Code to link your workspace with the newly created virtual environment:
 2. Type and select **Python: Select Interpreter**.
 3. Choose the option pointing to your local workspace environment: `.\.venv\Scripts\python.exe` (labeled as **Recommended**).
 
+> 💡 **Note:** You do not need to manually activate the virtual environment via terminal commands. VS Code will handle this automatically once the interpreter is selected.
+
 ---
 
-## 6. Auto-Activate and Install dbt
-
-Now, let VS Code handle the environment activation and pull down the analytical engineering tools.
+## 5. Install dbt and Verify Setup
 
 1. Kill your current terminal instance by clicking the **Trash Can icon** in the terminal panel to completely reset the session.
-2. Open a fresh terminal tab (`Ctrl + ` `). VS Code will automatically execute the activation script behind the scenes, and you will immediately see the **`(.venv)`** prefix in your terminal prompt line.
-3. Install the dbt core framework along with the ClickHouse database adapter by running:
+2. Open a fresh terminal tab (`Ctrl + ` `). You will immediately see the **`(.venv)`** prefix in your terminal prompt, confirming the environment is active.
+3. Install the dbt core framework along with the ClickHouse database adapter:
 
 ```bash
 pip install dbt-core==1.8.0 dbt-clickhouse==1.8.5
 pip freeze > requirements.txt
-
 ```
 
----
-
-## 7. Verification
-
-To ensure everything is wired up correctly, run the following command to check the dbt installation status:
+4. Verify the installation:
 
 ```bash
 dbt --version
+```
 
+Expected output:
+
+```
+Core:
+  - installed: 1.8.0
+Plugins:
+  - clickhouse: 1.8.5
 ```
