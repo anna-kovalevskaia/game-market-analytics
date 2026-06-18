@@ -126,8 +126,11 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 
 ## Development Environment
 
-- **IDE:** PyCharm
-- **AI Assistant:** Continue.dev with Qwen2.5-Coder (local, via Ollama) - for contextual dbt schema generation, DAG boilerplate, and SQL optimization
+- **IDE:** VS Code
+- **AI Assistant:** Continue.dev with Qwen2.5-Coder (locally, via Ollama) — for generating dbt schemas, DAG templates, and SQL optimization
+- **Containerization:** Docker Desktop — for orchestrating Airflow, ClickHouse, and dbt
+- **Python:** 3.12 in an isolated virtual environment (.venv)
+- **Environment Setup:** see [infra/README.md](infra/README.md)
 
 
 ## Project Structure
