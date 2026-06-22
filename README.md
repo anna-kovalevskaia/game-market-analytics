@@ -127,10 +127,29 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 ## Development Environment
 
 - **IDE:** VS Code
-- **AI Assistant:** Continue.dev with Qwen2.5-Coder (locally, via Ollama) — for generating dbt schemas, DAG templates, and SQL optimization
+- **AI Assistant:** Continue.dev with local & cloud AI models via Ollama
 - **Containerization:** Docker Desktop — for orchestrating Airflow, ClickHouse, and dbt
 - **Python:** 3.12 in an isolated virtual environment (.venv)
 - **Environment Setup:** see [infra/README.md](infra/README.md)
+
+#### Supported AI Models
+
+Models are configured via Ollama and accessed through Continue:
+
+**Local Models:**
+- `deepseek-coder:33b` — Local coding model with full capabilities
+- `qwen2.5-coder:32b` — Larger, more capable local model
+- `qwen2.5-coder:7b` — Lightweight local model for faster responses
+- `qwen2.5-coder:1.5b` — Ultra-lightweight for inline code suggestions
+
+**Cloud Models (via Ollama with free tier):**
+- `qwen3-coder:480b-cloud` — Cloud-based large model
+- `minimax-m3:cloud` — Cloud-based model with free limits
+
+**Embedding Model:**
+- `nomic-embed-text` — For codebase indexing and semantic search
+
+For detailed setup instructions, see [infra/README.md](infra/README.md#6-ai-assistant-setup-with-continue-and-ollama).
 
 
 ## Project Structure
