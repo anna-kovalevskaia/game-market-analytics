@@ -32,4 +32,3 @@ Rules:
 - Focus on performance and scalability in SQL queries
 - Use dbt for all transformations, no raw SQL in Airflow
 - Document all dbt models with descriptions and tests
-- To edit files always use the tool named exactly: edit_existing_file
