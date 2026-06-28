@@ -64,7 +64,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | dbt | Transformation layer | Data-as-Code: Staging -> Core -> Marts, with auto-generated lineage graph, documentation, Jinja macros, and data quality tests. SQL models are readable and maintainable unlike raw ETL scripts. |
 | Google Sheets | Cloud buffer | Lightweight, free cloud layer for publishing dashboard-ready marts from local DWH to the BI layer - no server required. Only pre-aggregated, dashboard-ready data is pushed to the cloud. |
 | Tableau Public | Visualization | Connected to Google Sheets for automatic daily refresh of the public dashboard. |
-| Azure Static Web Apps | Frontend hosting | Public hosting for embedding the BI dashboard via iframe. Tableau Public is inaccessible in some regions (including Russia) - Azure Static Web Apps ensures the dashboard is reachable from anywhere in the world. |
+
 
 ## Architecture
 
@@ -88,8 +88,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
               (dashboard-ready marts only)
                        |
           [Tableau Public - live dashboard]
-                       |
-          [Azure Static Web Apps - iframe]
+
 ```
 
 **Design principle: Serverless & Local-First BI**
