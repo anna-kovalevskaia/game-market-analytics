@@ -11,7 +11,8 @@ Follow these steps to prepare the local development environment for this project
 * [3. Clone the Repository](#3-clone-the-repository)
 * [4. Configure Python Virtual Environment](#4-configure-python-virtual-environment)
 * [5. Install dbt and Verify Setup](#5-install-dbt-and-verify-setup)
-* [6. AI Assistant Setup with Continue and Ollama (Optional)](#6-ai-assistant-setup-with-continue-and-ollama)
+* [6. Prepare Environment Variables and Secrets](#6-prepare-environment-variables-and-secrets)
+* [7. AI Assistant Setup with Continue and Ollama (Optional)](#7-ai-assistant-setup-with-continue-and-ollama-optional)
 
 ---
 
@@ -40,7 +41,7 @@ Open VS Code, navigate to the Extensions tab (`Ctrl+Shift+X` or `Cmd+Shift+X`), 
 * **Python** (by Microsoft) — Enables IntelliSense, linting, and structural integration with your virtual environments.
 * **dbt Power User** — Essential for on-the-fly Jinja-SQL compilation, query previews, and interactive lineage graphs directly inside the IDE.
 * **Docker** (by Microsoft) — Provides a clean GUI interface to manage containers, view application logs, and restart services without using the terminal.
-* **Continue** — A powerful interface bridge to connect local or cloud-based AI code assistants (like Ollama + Qwen2.5-Coder).
+* **Continue** — A powerful interface bridge to connect local or cloud-based AI code assistants (like Ollama + Qwen2.5-Coder). Optional — see [Section 7](#7-ai-assistant-setup-with-continue-and-ollama-optional).
 
 ---
 
@@ -69,9 +70,9 @@ py --version
 python3 --version
 ```
 
-> ⚠️ **Important (Windows):** If your terminal states that Python is not found,  
-> download Python 3.12 directly from [Python.org](https://www.python.org/downloads/release/python-3120/).  
-> Run the installer and **strictly check the box that says "Add python.exe to PATH"**  
+> ⚠️ **Important (Windows):** If your terminal states that Python is not found,
+> download Python 3.12 directly from [Python.org](https://www.python.org/downloads/release/python-3120/).
+> Run the installer and **strictly check the box that says "Add python.exe to PATH"**
 > on the very first screen.
 
 ### Create the Environment
@@ -101,7 +102,7 @@ Tell VS Code to link your workspace with the newly created virtual environment:
 ## 5. Install dbt and Verify Setup
 
 1. Kill your current terminal instance by clicking the **Trash Can icon** in the terminal panel to completely reset the session.
-2. Open a fresh terminal tab (`Ctrl + ` `). You will immediately see the **`(.venv)`** prefix in your terminal prompt, confirming the environment is active.
+2. Open a fresh terminal tab (`` Ctrl+` ``). You will immediately see the **`(.venv)`** prefix in your terminal prompt, confirming the environment is active.
 3. Install the dbt core framework along with the ClickHouse database adapter:
 
 ```bash
@@ -126,32 +127,93 @@ Plugins:
 
 ---
 
-## 6. AI Assistant Setup with Continue and Ollama
+## 6. Prepare Environment Variables and Secrets
+
+Before starting Docker containers, you need to configure environment variables and generate secrets. All sensitive values are stored in a local `.env` file that is never committed to the repository.
+
+### Step 1: Create the `.env` File
+
+Copy the provided template:
+
+```bash
+# On Windows
+copy infra\.env.example infra\.env
+
+# On macOS / Linux
+cp infra/.env.example infra/.env
+```
+
+Open `infra/.env` and fill in all values as described below.
+
+### Step 2: Generate the Airflow Fernet Key
+
+Airflow uses a Fernet key to encrypt sensitive data stored in its metadata database — Connections, Variables, and passwords. Without it, Airflow will fail to start.
+
+Generate the key once and save it. It must remain the same across all container restarts — if it changes, previously encrypted data becomes unreadable.
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Copy the output and set it in `infra/.env`:
+
+```bash
+AIRFLOW__CORE__FERNET_KEY=your_generated_key_here
+```
+
+> ⚠️ **Never regenerate this key** after the first run. If lost, all encrypted Airflow data must be re-entered manually.
+
+### Step 3: Review `.env` Values
+
+Your final `infra/.env` should look like this:
+
+```bash
+# Airflow
+AIRFLOW_UID=50000
+AIRFLOW__CORE__FERNET_KEY=your_generated_fernet_key
+_AIRFLOW_WWW_USER_USERNAME=your_airflow_username
+_AIRFLOW_WWW_USER_PASSWORD=your_airflow_password
+
+# PostgreSQL — Airflow metadata database
+POSTGRES_USER=your_postgres_user
+POSTGRES_PASSWORD=your_postgres_password
+POSTGRES_DB=airflow
+
+# ClickHouse — analytics DWH
+CLICKHOUSE_DB=analytics
+CLICKHOUSE_ADMIN_USER=admin
+CLICKHOUSE_ADMIN_PASSWORD=your_admin_password
+CLICKHOUSE_DBT_USER=dbt_user
+CLICKHOUSE_DBT_PASSWORD=your_dbt_password
+```
+
+> 💡 **Note:** The `.env` file is listed in `.gitignore` and will never be committed to the repository. Only `.env.example` (with placeholder values) is tracked by Git.
+
+---
+
+## 7. AI Assistant Setup with Continue and Ollama (Optional)
 
 Continue is an open-source AI coding assistant that connects VS Code to local models via Ollama. It enables context-aware code generation, inline completions, and codebase-wide semantic search — all running locally without sending data to external servers.
 
 > 💡 **Note:** This section is optional. The project works without an AI assistant. Continue is recommended for accelerating dbt model generation, DAG authoring, and SQL optimization.
 
----
-
 ### Step 1: Install Ollama
 
 Ollama is a local runtime for AI models.
 
-**Windows:**
-Download and run the installer: [Download Ollama](https://ollama.ai/)
+**Windows:** Download and run the installer: [Download Ollama](https://ollama.ai/)
 
 **macOS / Linux:**
+
 ```bash
 curl -fsSL https://ollama.ai/install.sh | sh
 ```
 
 Verify installation:
+
 ```bash
 ollama --version
 ```
-
----
 
 ### Step 2: Start Ollama Service
 
@@ -161,9 +223,9 @@ Ollama must be running before pulling models or using Continue.
 ollama serve
 ```
 
-On Windows, Ollama runs as a system service automatically after installation — no manual start needed.
+**Windows:** Ollama runs as a system service automatically after installation — no manual start needed.
 
-On Linux:
+**Linux:**
 
 ```bash
 sudo systemctl start ollama
@@ -174,8 +236,6 @@ Verify it is running:
 ```bash
 curl http://localhost:11434/api/tags
 ```
-
----
 
 ### Step 3: Pull Models Locally
 
@@ -200,8 +260,6 @@ Verify all models are available:
 ```bash
 ollama list
 ```
-
----
 
 ### Step 4: Create the Continue Configuration File
 
@@ -261,8 +319,6 @@ context:
 | `roles` | `chat` / `edit` / `apply` — code generation; `autocomplete` — inline suggestions; `embed` — codebase indexing |
 | `context: codebase` | Enables `@codebase` semantic search across the entire project |
 
----
-
 ### Step 5: Configure Project Rules
 
 Project-specific instructions for the AI assistant are stored in `.github/instructions/analytics-engineer.instructions.md`. This file is committed to the repository and automatically loaded by Continue when working in this project.
@@ -270,8 +326,6 @@ Project-specific instructions for the AI assistant are stored in `.github/instru
 It defines the tech stack, data layer conventions, and coding rules — so the model generates ClickHouse-compatible SQL, follows the `staging → core → marts` dbt structure, and uses the TaskFlow API for Airflow DAGs without requiring manual context in every message.
 
 No additional setup is required — Continue picks up the file automatically.
-
----
 
 ### Step 6: Verify Codebase Indexing
 
@@ -282,8 +336,4 @@ Continue indexes the project files using the embedding model to enable semantic 
 3. Confirm **Indexing complete** is shown with no errors
 4. If errors appear, click **Click to re-index**
 
-Once indexed, use `@Codebase` in the chat to search across the entire project:
-
-```
-@Codebase what models exist in the staging layer?
-```
+Once indexed, use `@codebase` in the chat to search across the entire project.
