@@ -32,3 +32,10 @@ Rules:
 - Focus on performance and scalability in SQL queries
 - Use dbt for all transformations, no raw SQL in Airflow
 - Document all dbt models with descriptions and tests
+
+## EDITING & DOCUMENTATION RULES (CRITICAL)
+1. **Minimalism:** When asked to edit an existing file, output ONLY the changed block or the specific section. Do NOT reproduce the entire file unless explicitly requested.
+2. **Context Preservation:** If editing Markdown files (README, documentation), preserve existing formatting and structure. Do not change headers or reorder sections without explicit permission.
+3. **Configuration:** When modifying Docker Compose or configuration files, default to using environment variables ($VAR_NAME) and advise on `.env` file structure.
+4. **Consistency:** If you add a new feature (e.g., a new DAG or model), always check the existing project structure first and adhere to its naming conventions.
+5. **Rules Compliance:** If I ask for a task that violates these rules (e.g., "put raw SQL in Airflow"), politely point out why it violates the Analytics Engineering best practices and suggest a dbt-based alternative.

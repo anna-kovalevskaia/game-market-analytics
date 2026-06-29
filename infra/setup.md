@@ -11,7 +11,7 @@ Follow these steps to prepare the local development environment for this project
 * [3. Clone the Repository](#3-clone-the-repository)
 * [4. Configure Python Virtual Environment](#4-configure-python-virtual-environment)
 * [5. Install dbt and Verify Setup](#5-install-dbt-and-verify-setup)
-* [6. AI Assistant Setup with Continue and Ollama](#6-ai-assistant-setup-with-continue-and-ollama)
+* [6. AI Assistant Setup with Continue and Ollama (Optional)](#6-ai-assistant-setup-with-continue-and-ollama)
 
 ---
 
@@ -128,58 +128,92 @@ Plugins:
 
 ## 6. AI Assistant Setup with Continue and Ollama
 
-### Why Continue?
+Continue is an open-source AI coding assistant that connects VS Code to local models via Ollama. It enables context-aware code generation, inline completions, and codebase-wide semantic search — all running locally without sending data to external servers.
 
-Continue was chosen over VS Code's built-in "Open in Agents" because local models do not work correctly in Agents and Plan modes with the built-in tool—they only return raw JSON without proper agentic behavior.
+> 💡 **Note:** This section is optional. The project works without an AI assistant. Continue is recommended for accelerating dbt model generation, DAG authoring, and SQL optimization.
+
+---
 
 ### Step 1: Install Ollama
 
-Ollama is a local runtime for AI models. Download and install it:
+Ollama is a local runtime for AI models.
 
-* [Download Ollama](https://ollama.ai/)
+**Windows:**
+Download and run the installer: [Download Ollama](https://ollama.ai/)
 
-On macOS/Linux:
+**macOS / Linux:**
 ```bash
 curl -fsSL https://ollama.ai/install.sh | sh
 ```
 
-On Windows, download the installer and run it. Verify installation:
-
+Verify installation:
 ```bash
 ollama --version
 ```
 
-### Step 2: Pull Models Locally
+---
 
-Pull the models you want to use locally:
+### Step 2: Start Ollama Service
+
+Ollama must be running before pulling models or using Continue.
 
 ```bash
-# Large local model (32B parameters, requires ~20GB VRAM)
-ollama pull qwen2.5-coder:32b
-
-# Smaller local model (7B parameters, requires ~8GB VRAM)
-ollama pull qwen2.5-coder:7b
-
-# Alternative local model
-ollama pull deepseek-coder
+ollama serve
 ```
 
-To verify models are available:
+On Windows, Ollama runs as a system service automatically after installation — no manual start needed.
+
+On Linux:
+
+```bash
+sudo systemctl start ollama
+```
+
+Verify it is running:
+
+```bash
+curl http://localhost:11434/api/tags
+```
+
+---
+
+### Step 3: Pull Models Locally
+
+Pull the models required for this project:
+
+```bash
+# Chat and code generation (requires ~20GB VRAM)
+ollama pull qwen2.5-coder:32b
+
+# Lightweight alternative (requires ~8GB VRAM)
+ollama pull qwen2.5-coder:7b
+
+# Autocomplete model (fast, minimal VRAM)
+ollama pull qwen2.5-coder:1.5b-base
+
+# Embedding model for codebase indexing
+ollama pull nomic-embed-text
+```
+
+Verify all models are available:
 
 ```bash
 ollama list
 ```
 
-### Step 3: Create the Continue Configuration File
+---
 
-Continue stores configuration in a `.continue/config.yml` file. This file is created through the Continue UI:
+### Step 4: Create the Continue Configuration File
 
-1. After installing Continue, open the **Continue** sidebar in VS Code
-2. Click on the **Settings** icon (⚙️) in the Continue panel
-3. Click **Edit config.yml**
-4. Add your Ollama models to the `models` section
+Continue reads its configuration from `C:\Users\<username>\.continue\config.yaml` (Windows) or `~/.continue/config.yaml` (macOS/Linux). This is a global file that applies across all projects.
 
-**Example config.yml:**
+Open it through the Continue UI:
+
+1. Open the **Continue** sidebar in VS Code
+2. Click the **Settings** icon (⚙️) in the Continue panel
+3. Click **Edit config.yaml**
+
+Replace the contents with the following configuration:
 
 ```yaml
 name: Main Config
@@ -187,14 +221,6 @@ version: 1.0.0
 schema: v1
 
 models:
-  - name: deepseek-coder:33b
-    provider: ollama
-    model: deepseek-coder:33b
-    roles:
-      - chat
-      - edit
-      - apply
-
   - name: qwen2.5-coder:32b
     provider: ollama
     model: qwen2.5-coder:32b
@@ -227,96 +253,37 @@ context:
   - provider: codebase
 ```
 
-**Key Configuration Fields:**
+**Key configuration fields:**
 
 | Field | Purpose |
 |---|---|
-| `name` | Display name for the model in Continue UI |
-| `provider` | AI provider (ollama for local/cloud) |
-| `model` | Model identifier (must match `ollama list` output) |
-| `roles` | What the model can do: `chat` (conversations), `edit` (code generation), `apply` (apply edits), `autocomplete` (inline suggestions), `embed` (codebase indexing) |
-| `context` | Data sources for context (codebase enables intelligent code search) |
+| `provider` | `ollama` for local models |
+| `roles` | `chat` / `edit` / `apply` — code generation; `autocomplete` — inline suggestions; `embed` — codebase indexing |
+| `context: codebase` | Enables `@codebase` semantic search across the entire project |
 
-### Step 4: Configure Rules
+---
 
-Rules define coding standards that guide the AI assistant. The project includes `.continue/rules/analytics-engineer.md` with project-specific guidelines:
+### Step 5: Configure Project Rules
 
-**File Location:** `.continue/rules/analytics-engineer.md`
+Project-specific instructions for the AI assistant are stored in `.github/instructions/analytics-engineer.instructions.md`. This file is committed to the repository and automatically loaded by Continue when working in this project.
 
-Rules are automatically loaded by Continue when you open the project. You can view and edit them through the Continue UI or directly in the editor.
+It defines the tech stack, data layer conventions, and coding rules — so the model generates ClickHouse-compatible SQL, follows the `staging → core → marts` dbt structure, and uses the TaskFlow API for Airflow DAGs without requiring manual context in every message.
 
-### Step 5: Embedding Model for Codebase Indexing
+No additional setup is required — Continue picks up the file automatically.
 
-The embedding model (role: `embed`) enables intelligent semantic search within your codebase. In the config.yml example above, it's configured as:
+---
 
-```yaml
-  - name: Nomic Embed
-    provider: ollama
-    model: nomic-embed-text:latest
-    roles:
-      - embed
+### Step 6: Verify Codebase Indexing
+
+Continue indexes the project files using the embedding model to enable semantic search.
+
+1. Open the Continue sidebar
+2. Click the **Settings** icon → **Indexing**
+3. Confirm **Indexing complete** is shown with no errors
+4. If errors appear, click **Click to re-index**
+
+Once indexed, use `@Codebase` in the chat to search across the entire project:
+
 ```
-
-First, pull the embedding model:
-
-```bash
-ollama pull nomic-embed-text
+@Codebase what models exist in the staging layer?
 ```
-
-This allows Continue to index and understand your project structure for better context in code generation.
-
-### Step 6: Start Ollama Service
-
-Keep Ollama running in the background. Start it with:
-
-```bash
-ollama serve
-```
-
-Or, for persistent background service:
-
-**On macOS:**
-```bash
-brew services start ollama
-```
-
-**On Windows:**
-Ollama runs as a system service by default after installation.
-
-**On Linux:**
-```bash
-sudo systemctl start ollama
-```
-
-Verify Ollama is running:
-
-```bash
-curl http://localhost:11434/api/tags
-```
-
-### Step 7: Open Project in Continue
-
-1. Install **Continue** extension from VS Code Marketplace
-2. Open the project in VS Code
-3. Continue will automatically detect `.continue/config.yml` and load models
-4. Click the **Continue** icon in the sidebar to open the chat interface
-5. Select a model from the dropdown and start coding
-
-### Using Continue
-
-**Available Commands:**
-
-- `/chat` — Ask the AI assistant a question (default mode)
-- `/edit` — Generate or modify code in the current file
-- `/codebase` — Ask questions about your entire codebase
-- `/docs` — Ask about documentation
-- `Ctrl+I` (Windows/Linux) or `Cmd+I` (Mac) — Quick code generation inline
-
-**Example Usage:**
-
-In VS Code, type:
-```
-/edit Generate a dbt model for staging raw Steam API data
-```
-
-Continue will generate code based on your project context, rules, and codebase structure.
