@@ -129,7 +129,7 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 - **AI Assistant:** Continue.dev with local & cloud AI models via Ollama
 - **Containerization:** Docker Desktop — for orchestrating Airflow, ClickHouse, and dbt
 - **Python:** 3.12 in an isolated virtual environment (.venv)
-- **Environment Setup:** see [infra/README.md](infra/README.md)
+- **Environment Setup:** see [infra/setup.md](infra/setup.md)
 
 #### Supported AI Models
 

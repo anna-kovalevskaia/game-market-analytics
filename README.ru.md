@@ -122,7 +122,7 @@
 - **AI-ассистент:** Continue.dev с локальными и облачными AI-моделями через Ollama
 - **Контейнеризация:** Docker Desktop — для оркестрации Airflow, ClickHouse и dbt
 - **Python:** 3.12 в изолированном виртуальном окружении (.venv)
-- **Настройка среды:** см. [infra/README.md](infra/README.md)
+- **Настройка среды:** см. [infra/setup.md](infra/setup.md)
 
 #### Поддерживаемые AI-модели
 
