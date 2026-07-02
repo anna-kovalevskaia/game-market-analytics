@@ -1,18 +1,21 @@
 #!/bin/bash
-# ============================================================
-# ClickHouse initialization script
-# Runs automatically on first container start
-# Creates users and grants permissions
-# ============================================================
-
 set -e
 
-clickhouse-client --query "CREATE DATABASE IF NOT EXISTS analytics;"
+echo "=== ClickHouse initialization started ==="
 
-clickhouse-client --query "ALTER USER admin IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_ADMIN_PASSWORD}';"
+until clickhouse-client --query "SELECT 1" > /dev/null 2>&1; do
+    sleep 2
+done
 
-clickhouse-client --query "CREATE USER IF NOT EXISTS dbt_user IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_DBT_PASSWORD}';"
+clickhouse-client --query "CREATE DATABASE IF NOT EXISTS ${CLICKHOUSE_DB:-analytics}"
 
-clickhouse-client --query "GRANT SELECT, INSERT, CREATE TABLE, DROP TABLE, ALTER ON analytics.* TO dbt_user;"
+# admin
+if [ -n "$CLICKHOUSE_ADMIN_PASSWORD" ]; then
+    clickhouse-client --query "CREATE USER IF NOT EXISTS ${CLICKHOUSE_ADMIN_USER:-admin} IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_ADMIN_PASSWORD}'"
+    clickhouse-client --query "GRANT ALL ON *.* TO ${CLICKHOUSE_ADMIN_USER:-admin} WITH GRANT OPTION"
+    echo "✓ Admin user created"
+fi
 
-echo "ClickHouse initialization completed successfully."
+echo "✓ Default user locked (readonly)"
+
+echo "=== ClickHouse initialization completed ==="

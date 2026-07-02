@@ -181,15 +181,43 @@ POSTGRES_DB=airflow
 
 # ClickHouse — analytics DWH
 CLICKHOUSE_DB=analytics
+
+# airflow_user — used by dbt and DAGs (RW on analytics.*)
+CLICKHOUSE_AIRFLOW_USER=airflow_user
+CLICKHOUSE_AIRFLOW_PASSWORD=your_airflow_password
+
+# admin — for init.sh and manual operations (root)
+# MUST match the password used in users.d/01-admin.xml
 CLICKHOUSE_ADMIN_USER=admin
 CLICKHOUSE_ADMIN_PASSWORD=your_admin_password
-CLICKHOUSE_DBT_USER=dbt_user
-CLICKHOUSE_DBT_PASSWORD=your_dbt_password
 ```
 
 > 💡 **Note:** The `.env` file is listed in `.gitignore` and will never be committed to the repository. Only `.env.example` (with placeholder values) is tracked by Git.
 
----
+### Step 4: Create the ClickHouse Admin User
+
+```bash
+# Copy template
+cp infra/clickhouse/users.d/01-admin.xml.example infra/clickhouse/users.d/01-admin.xml
+
+# Generate hash
+HASH=$(echo -n "your_admin_password" | sha256sum | awk '{print $1}')
+
+# Replace placeholder
+sed -i "s|REPLACE_WITH_SHA256_OF_YOUR_PASSWORD|$HASH|" infra/clickhouse/users.d/01-admin.xml
+```
+
+### Step 5: Rotating the Admin Password
+
+```bash
+NEW_HASH=$(echo -n "new_password" | sha256sum | awk '{print $1}')
+sed -i "s|<password_sha256_hex>.*</password_sha256_hex>|<password_sha256_hex>$NEW_HASH</password_sha256_hex>|" infra/clickhouse/users.d/01-admin.xml
+sed -i "s|CLICKHOUSE_ADMIN_PASSWORD=.*|CLICKHOUSE_ADMIN_PASSWORD=new_password|" infra/.env
+docker compose restart clickhouse
+```
+
+> 💡 **Note:** The `airflow_user` password is managed via Airflow UI → Admin → Connections (clickhouse_default).
+----
 
 ## 7. AI Assistant Setup with Continue and Ollama (Optional)
 
