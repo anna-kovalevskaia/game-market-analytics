@@ -16,15 +16,15 @@ Follow these steps to prepare the local development environment for this project
 
 ---
 
-## 1. Install Base Software
+### 1. Install Base Software
 
-### Visual Studio Code
+#### Visual Studio Code
 
 Download and install the editor from the official website:
 
 * [Download VS Code](https://code.visualstudio.com/)
 
-### Docker Desktop
+#### Docker Desktop
 
 Download and install the Docker engine backend. Ensure that Docker Desktop is running in the background:
 
@@ -34,7 +34,7 @@ Download and install the Docker engine backend. Ensure that Docker Desktop is ru
 
 ---
 
-## 2. Install Required VS Code Extensions
+### 2. Install Required VS Code Extensions
 
 Open VS Code, navigate to the Extensions tab (`Ctrl+Shift+X` or `Cmd+Shift+X`), and install the following toolset:
 
@@ -45,7 +45,7 @@ Open VS Code, navigate to the Extensions tab (`Ctrl+Shift+X` or `Cmd+Shift+X`), 
 
 ---
 
-## 3. Clone the Repository
+### 3. Clone the Repository
 
 Open your system terminal, clone the repository, and step into the project's root directory:
 
@@ -56,9 +56,9 @@ cd game-market-analytics
 
 ---
 
-## 4. Configure Python Virtual Environment
+### 4. Configure Python Virtual Environment
 
-### Check Python Version
+#### Check Python Version
 
 Before creating the environment, verify that Python 3.12 is installed on your machine:
 
@@ -75,7 +75,7 @@ python3 --version
 > Run the installer and **strictly check the box that says "Add python.exe to PATH"**
 > on the very first screen.
 
-### Create the Environment
+#### Create the Environment
 
 Run the following command inside the root `game-market-analytics` directory to generate a hidden, isolated folder named `.venv`:
 
@@ -87,7 +87,7 @@ py -3.12 -m venv .venv
 python3.12 -m venv .venv
 ```
 
-### Select Python Interpreter in VS Code
+#### Select Python Interpreter in VS Code
 
 Tell VS Code to link your workspace with the newly created virtual environment:
 
@@ -99,7 +99,7 @@ Tell VS Code to link your workspace with the newly created virtual environment:
 
 ---
 
-## 5. Install dbt and Verify Setup
+### 5. Install dbt and Verify Setup
 
 1. Kill your current terminal instance by clicking the **Trash Can icon** in the terminal panel to completely reset the session.
 2. Open a fresh terminal tab (`` Ctrl+` ``). You will immediately see the **`(.venv)`** prefix in your terminal prompt, confirming the environment is active.
@@ -127,11 +127,11 @@ Plugins:
 
 ---
 
-## 6. Prepare Environment Variables and Secrets
+### 6. Prepare Environment Variables and Secrets
 
 Before starting Docker containers, you need to configure environment variables and generate secrets. All sensitive values are stored in a local `.env` file that is never committed to the repository.
 
-### Step 1: Create the `.env` File
+#### Step 1: Create the `.env` File
 
 Copy the provided template:
 
@@ -145,7 +145,7 @@ cp infra/.env.example infra/.env
 
 Open `infra/.env` and fill in all values as described below.
 
-### Step 2: Generate the Airflow Fernet Key
+#### Step 2: Generate the Airflow Fernet Key
 
 Airflow uses a Fernet key to encrypt sensitive data stored in its metadata database — Connections, Variables, and passwords. Without it, Airflow will fail to start.
 
@@ -163,7 +163,7 @@ AIRFLOW__CORE__FERNET_KEY=your_generated_key_here
 
 > ⚠️ **Never regenerate this key** after the first run. If lost, all encrypted Airflow data must be re-entered manually.
 
-### Step 3: Review `.env` Values
+#### Step 3: Review `.env` Values
 
 Your final `infra/.env` should look like this:
 
@@ -194,7 +194,7 @@ CLICKHOUSE_ADMIN_PASSWORD=your_admin_password
 
 > 💡 **Note:** The `.env` file is listed in `.gitignore` and will never be committed to the repository. Only `.env.example` (with placeholder values) is tracked by Git.
 
-### Step 4: Create the ClickHouse Admin User
+#### Step 4: Create the ClickHouse Admin User
 
 ```bash
 # Copy template
@@ -207,7 +207,7 @@ HASH=$(echo -n "your_admin_password" | sha256sum | awk '{print $1}')
 sed -i "s|REPLACE_WITH_SHA256_OF_YOUR_PASSWORD|$HASH|" infra/clickhouse/users.d/01-admin.xml
 ```
 
-### Step 5: Rotating the Admin Password
+#### Step 5: Rotating the Admin Password
 
 ```bash
 NEW_HASH=$(echo -n "new_password" | sha256sum | awk '{print $1}')
@@ -219,13 +219,13 @@ docker compose restart clickhouse
 > 💡 **Note:** The `airflow_user` password is managed via Airflow UI → Admin → Connections (clickhouse_default).
 ----
 
-## 7. AI Assistant Setup with Continue and Ollama (Optional)
+### 7. AI Assistant Setup with Continue and Ollama (Optional)
 
 Continue is an open-source AI coding assistant that connects VS Code to local models via Ollama. It enables context-aware code generation, inline completions, and codebase-wide semantic search — all running locally without sending data to external servers.
 
 > 💡 **Note:** This section is optional. The project works without an AI assistant. Continue is recommended for accelerating dbt model generation, DAG authoring, and SQL optimization.
 
-### Step 1: Install Ollama
+#### Step 1: Install Ollama
 
 Ollama is a local runtime for AI models.
 
@@ -243,7 +243,7 @@ Verify installation:
 ollama --version
 ```
 
-### Step 2: Start Ollama Service
+#### Step 2: Start Ollama Service
 
 Ollama must be running before pulling models or using Continue.
 
@@ -265,7 +265,7 @@ Verify it is running:
 curl http://localhost:11434/api/tags
 ```
 
-### Step 3: Pull Models Locally
+#### Step 3: Pull Models Locally
 
 Pull the models required for this project:
 
@@ -289,7 +289,7 @@ Verify all models are available:
 ollama list
 ```
 
-### Step 4: Create the Continue Configuration File
+#### Step 4: Create the Continue Configuration File
 
 Continue reads its configuration from `C:\Users\<username>\.continue\config.yaml` (Windows) or `~/.continue/config.yaml` (macOS/Linux). This is a global file that applies across all projects.
 
@@ -347,7 +347,7 @@ context:
 | `roles` | `chat` / `edit` / `apply` — code generation; `autocomplete` — inline suggestions; `embed` — codebase indexing |
 | `context: codebase` | Enables `@codebase` semantic search across the entire project |
 
-### Step 5: Configure Project Rules
+#### Step 5: Configure Project Rules
 
 Project-specific instructions for the AI assistant are stored in `.github/instructions/analytics-engineer.instructions.md`. This file is committed to the repository and automatically loaded by Continue when working in this project.
 
@@ -355,7 +355,7 @@ It defines the tech stack, data layer conventions, and coding rules — so the m
 
 No additional setup is required — Continue picks up the file automatically.
 
-### Step 6: Verify Codebase Indexing
+#### Step 6: Verify Codebase Indexing
 
 Continue indexes the project files using the embedding model to enable semantic search.
 
