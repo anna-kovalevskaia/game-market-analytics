@@ -106,7 +106,7 @@ Tell VS Code to link your workspace with the newly created virtual environment:
 3. Install the dbt core framework along with the ClickHouse database adapter:
 
 ```bash
-pip install dbt-core==1.8.0 dbt-clickhouse==1.8.5
+pip install dbt-core==1.9.0 dbt-clickhouse==1.9.0
 pip freeze > requirements.txt
 ```
 
@@ -120,9 +120,9 @@ Expected output:
 
 ```
 Core:
-  - installed: 1.8.0
+  - installed: 1.9.0
 Plugins:
-  - clickhouse: 1.8.5
+  - clickhouse: 1.9.0
 ```
 
 ---
@@ -208,7 +208,7 @@ sed -i "s|REPLACE_WITH_SHA256_OF_YOUR_PASSWORD|$HASH|" infra/clickhouse/users.d/
 ```
 > 💡 **Note:** The `01-admin.xml` file is listed in `.gitignore` and will never be committed to the repository. Only `01-admin.xml.example` (with placeholder values) is tracked by Git.
 
-#### Step 5: Rotating the Admin Password (if needed)
+#### Step 5: Rotating the Admin Password (only if you have changed the admin password if needed)
 
 ```bash
 NEW_HASH=$(echo -n "new_password" | sha256sum | awk '{print $1}')
