@@ -206,8 +206,9 @@ HASH=$(echo -n "your_admin_password" | sha256sum | awk '{print $1}')
 # Replace placeholder
 sed -i "s|REPLACE_WITH_SHA256_OF_YOUR_PASSWORD|$HASH|" infra/clickhouse/users.d/01-admin.xml
 ```
+> 💡 **Note:** The `01-admin.xml` file is listed in `.gitignore` and will never be committed to the repository. Only `01-admin.xml.example` (with placeholder values) is tracked by Git.
 
-#### Step 5: Rotating the Admin Password
+#### Step 5: Rotating the Admin Password (if needed)
 
 ```bash
 NEW_HASH=$(echo -n "new_password" | sha256sum | awk '{print $1}')

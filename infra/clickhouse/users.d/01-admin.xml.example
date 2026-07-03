@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<clickhouse>
+    <users>
+        <admin>
+            <password_sha256_hex>REPLACE_WITH_SHA256_OF_YOUR_PASSWORD</password_sha256_hex>
+            <networks replace="true">
+                <ip>::/0</ip>
+            </networks>
+            <access_management>1</access_management>
+            <quota>default</quota>
+        </admin>
+    </users>
+</clickhouse>
