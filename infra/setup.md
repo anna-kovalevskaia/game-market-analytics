@@ -12,7 +12,13 @@ Follow these steps to prepare the local development environment for this project
 * [4. Configure Python Virtual Environment](#4-configure-python-virtual-environment)
 * [5. Install dbt and Verify Setup](#5-install-dbt-and-verify-setup)
 * [6. Prepare Environment Variables and Secrets](#6-prepare-environment-variables-and-secrets)
-* [7. AI Assistant Setup with Continue and Ollama (Optional)](#7-ai-assistant-setup-with-continue-and-ollama-optional)
+  * [Step 1: Create the .env File](#step-1-create-the-env-file)
+  * [Step 2: Generate the Airflow Fernet Key](#step-2-generate-the-airflow-fernet-key)
+  * [Step 3: Review .env Values](#step-3-review-env-values)
+  * [Step 4: Create the ClickHouse Admin User](#step-4-create-the-clickhouse-admin-user)
+  * [Step 5: Rotating the Admin Password](#step-5-rotating-the-admin-password-only-if-you-have-changed-the-admin-password-if-needed)
+* [7. Launch Docker Containers](#7-launch-docker-containers)
+* [8. AI Assistant Setup with Continue and Ollama (Optional)](#8-ai-assistant-setup-with-continue-and-ollama-optional)
 
 ---
 
@@ -41,7 +47,7 @@ Open VS Code, navigate to the Extensions tab (`Ctrl+Shift+X` or `Cmd+Shift+X`), 
 * **Python** (by Microsoft) — Enables IntelliSense, linting, and structural integration with your virtual environments.
 * **dbt Power User** — Essential for on-the-fly Jinja-SQL compilation, query previews, and interactive lineage graphs directly inside the IDE.
 * **Docker** (by Microsoft) — Provides a clean GUI interface to manage containers, view application logs, and restart services without using the terminal.
-* **Continue** — A powerful interface bridge to connect local or cloud-based AI code assistants (like Ollama + Qwen2.5-Coder). Optional — see [Section 7](#7-ai-assistant-setup-with-continue-and-ollama-optional).
+* **Continue** — A powerful interface bridge to connect local or cloud-based AI code assistants (like Ollama + Qwen2.5-Coder). Optional — see [Section 8](#8-ai-assistant-setup-with-continue-and-ollama-optional).
 
 ---
 
@@ -218,9 +224,41 @@ docker compose restart clickhouse
 ```
 
 > 💡 **Note:** The `airflow_user` password is managed via Airflow UI → Admin → Connections (clickhouse_default).
-----
 
-### 7. AI Assistant Setup with Continue and Ollama (Optional)
+---
+
+### 7. Launch Docker Containers
+
+Once `infra/.env` and the ClickHouse admin user are configured, build and start the full stack — PostgreSQL, ClickHouse, and Airflow.
+
+From the `infra/` directory, run:
+
+```bash
+docker compose pull
+docker compose build
+docker compose up -d
+```
+
+* `docker compose pull` — fetches the latest base images (`postgres:15`, `clickhouse/clickhouse-server:26.3-lts`).
+* `docker compose build` — builds the custom Airflow image (`Dockerfile.airflow`), installing dependencies from `requirements-airflow.txt` and the `dbt_venv`.
+* `docker compose up -d` — starts all services in detached mode. On first run, `airflow-init` will migrate the metadata DB and create the admin user before `airflow-webserver` and `airflow-scheduler` start.
+
+Check that all containers are healthy:
+
+```bash
+docker compose ps
+```
+
+Then verify access:
+
+* **Airflow UI:** [http://localhost:8080](http://localhost:8080) — log in with `_AIRFLOW_WWW_USER_USERNAME` / `_AIRFLOW_WWW_USER_PASSWORD` from your `.env`.
+* **ClickHouse HTTP interface:** `http://localhost:8123/ping` should return `Ok.`
+
+> 💡 **Note:** If a container fails to become healthy, check its logs with `docker compose logs <service_name>` (e.g. `docker compose logs clickhouse`).
+
+---
+
+### 8. AI Assistant Setup with Continue and Ollama (Optional)
 
 Continue is an open-source AI coding assistant that connects VS Code to local models via Ollama. It enables context-aware code generation, inline completions, and codebase-wide semantic search — all running locally without sending data to external servers.
 

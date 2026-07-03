@@ -4,6 +4,11 @@ set -e
 echo "=== ClickHouse initialization started ==="
 
 # Guard that all required environment variables are set
+if [ ! -f /etc/clickhouse-server/users.d/01-admin.xml ]; then
+    echo "ERROR: 01-admin.xml not found. Run setup.md Step 6 first."
+    exit 1
+fi
+
 if [ -z "$CLICKHOUSE_ADMIN_PASSWORD" ]; then
     echo "ERROR: CLICKHOUSE_ADMIN_PASSWORD is not set"
     exit 1
