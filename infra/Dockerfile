@@ -8,5 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER airflow
 
-COPY requirements-airflow.txt /tmp/requirements-airflow.txt
+COPY requirements-airflow.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/requirements-airflow.txt
+
+RUN python -m venv /opt/airflow/dbt_venv \
+ && /opt/airflow/dbt_venv/bin/pip install --upgrade pip \
+ && /opt/airflow/dbt_venv/bin/pip install \
+      dbt-core==1.9.0 \
+      dbt-clickhouse==1.9.0
