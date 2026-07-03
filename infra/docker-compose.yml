@@ -68,11 +68,16 @@ services:
     image: clickhouse/clickhouse-server:26.3-lts
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+      CLICKHOUSE_ADMIN_USER: ${CLICKHOUSE_ADMIN_USER:-admin}
+      CLICKHOUSE_ADMIN_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
+      CLICKHOUSE_AIRFLOW_USER: ${CLICKHOUSE_AIRFLOW_USER:-airflow_user}
+      CLICKHOUSE_AIRFLOW_PASSWORD: ${CLICKHOUSE_AIRFLOW_PASSWORD}
     ports:
-      - "8123:8123"   # HTTP interface (used by dbt and Python)
-      - "9000:9000"   # Native interface
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
     volumes:
       - clickhouse-db-volume:/var/lib/clickhouse
+      - ./clickhouse/users.d:/etc/clickhouse-server/users.d:ro
       - ./clickhouse/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
