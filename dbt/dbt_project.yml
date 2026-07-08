@@ -1,0 +1,152 @@
+###############################################################################
+# game_market_analytics - dbt project configuration
+#
+# This project follows a layered architecture:
+#   staging -> core -> marts
+#
+# Schema-per-layer is implemented via `+schema:` blocks below. The profile
+# provides only the top-level ClickHouse database (`analytics`); per-layer
+# schemas are appended by dbt's default generate_schema_name macro.
+#
+# Materializations used:
+#   - view           : default for staging (cheap, no storage)
+#   - incremental    : for append-only time-series (CCU, viewing_hours, ...)
+#   - table          : for small dimension tables (< 1M rows)
+#   - distributed_table / dictionary : reserved for Phase 2+ marts
+#
+# ClickHouse-specific engine hints are set via `{{ config(...) }}` inside
+# individual models (ORDER BY, PARTITION BY, TTL, sample_by) - this file
+# only configures project-level defaults and selector behavior.
+###############################################################################
+
+name: 'game_market_analytics'
+version: '1.0.0'
+config-version: 2
+
+# Profile name (must match the top-level key in profiles.yml)
+profile: 'game_market_analytics'
+
+# Project layout
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+
+# Clean target build dir on `dbt clean`
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+###############################################################################
+# Quoting policy: ClickHouse is case-sensitive on identifiers, but our naming
+# convention is snake_case, so we disable quoting to keep SQL readable.
+###############################################################################
+quoting:
+  database: false
+  schema: false
+  identifier: false
+
+###############################################################################
+# Default materialization per layer
+#
+# NOTE: `+materialized` in dbt-clickhouse also accepts engine hints via the
+# `engine` config key (e.g. `engine: 'MergeTree()'`), but those are set per-
+# model for clarity. Here we only set the materialization kind.
+###############################################################################
+models:
+
+  #############################################################################
+  # STAGING: thin wrappers over raw sources. Always views - no data duplication,
+  # always reflects the latest raw payload, and trivial to swap when sources
+  # evolve.
+  #############################################################################
+  game_market_analytics:
+    staging:
+      +materialized: view
+      +schema: staging
+      # Sub-folder conventions (one folder per source):
+      #   models/staging/steam/
+      #   models/staging/steamspy/
+      #   models/staging/igdb/
+      #   models/staging/twitch/
+      steam:
+        +tags: ["steam", "daily"]
+      steamspy:
+        +tags: ["steamspy", "daily"]
+      igdb:
+        +tags: ["igdb", "daily"]
+      twitch:
+        +tags: ["twitch", "daily"]
+
+  #############################################################################
+  # CORE: business logic, joins, cleaning. Most core models are also views
+  # (they aggregate staging), but slowly-changing dimensions and time-series
+  # snapshots are incremental.
+  #############################################################################
+    core:
+      +materialized: view      # default for core
+      +schema: core            # -> analytics.core
+      # For high-volume time-series core models (e.g. ccu_daily),
+      # override per model: `{{ config(materialized='incremental', ...) }}`
+      dimensions:
+        +materialized: table   # small dims (< 1M rows): full refresh OK
+
+  #############################################################################
+  # MARTS: dashboard-ready, BI-exported (Google Sheets). Compact, denormalized,
+  # aggregated. Always rebuilt fresh - no `view` here, only `table` /
+  # `incremental` for the largest ones.
+  #############################################################################
+    marts:
+      +materialized: table     # full rebuilds; marts are small (< 1M rows)
+      +schema: marts           # -> analytics.marts
+      bi_export:
+        +tags: ["bi", "google_sheets"]
+        # These marts are the only ones pushed to Google Sheets - the rest
+        # stay local in ClickHouse for analyst exploration.
+
+###############################################################################
+# Seeds: small static CSVs (genres lookup, country codes, etc.)
+###############################################################################
+seeds:
+  game_market_analytics:
+    +schema: seeds             # -> analytics.seeds
+    +quote_columns: true       # CSVs may have headers with spaces
+
+###############################################################################
+# Snapshots: SCD type-2 for slowly changing dimensions (studios, publishers)
+###############################################################################
+snapshots:
+  game_market_analytics:
+    +target_schema: snapshots  # -> analytics.snapshots
+    +strategy: timestamp
+    +updated_at: updated_at
+
+###############################################################################
+# Tests: project-level overrides
+###############################################################################
+tests:
+  game_market_analytics:
+    +store_failures: true      # Persist failing rows for triage
+    +severity: warn            # Default: warn (override per test to "error")
+
+###############################################################################
+# vars: project-level defaults consumed by macros
+#
+# Example: a macro can read `var('clickhouse_default_engine')` to decide
+# between MergeTree / ReplacingMergeTree / CollapsingMergeTree.
+###############################################################################
+vars:
+  clickhouse_default_engine: "ReplacingMergeTree()"
+  # Window (days) for "trend" calculations in marts; can be overridden by
+  # running `dbt run --select ... --vars 'trend_window_days: 7'`.
+  trend_window_days: 30
+
+###############################################################################
+# Flags: dbt 1.8+ feature toggles relevant to this project
+###############################################################################
+flags:
+  use_microbatch: false       # Off for now: microbatch requires dbt 1.9+ and
+                              # ClickHouse support is still preview in the
+                              # adapter. Re-evaluate after dbt 1.10.

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install linters
+        run: pip install ruff black
+      - name: Ruff check
+        run: ruff check dags/
+      - name: Black check
+        run: black --check dags/
+
+  dbt-parse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install dbt
+        run: pip install dbt-core==1.9.0 dbt-clickhouse==1.9.0
+      - name: dbt parse (no DB connection)
+        working-directory: dbt
+        run: dbt parse
+
+  dags-validate:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_HOME: /tmp/airflow_home
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Prepare AIRFLOW_HOME
+        run: mkdir -p "$AIRFLOW_HOME"
+      - name: Install airflow
+        run: pip install apache-airflow==3.0.0
+      - name: dag parse
+        working-directory: dags
+        run: |
+          python -c "
+          from airflow.models import DagBag
+          bag = DagBag(dag_folder='.', include_examples=False)
+          assert len(bag.import_errors) == 0, f'DAG import errors: {bag.import_errors}'
+          print(f'Loaded {len(bag.dags)} DAGs successfully')
+          "
