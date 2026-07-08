@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 01-admin.xml
+infra/logs/
+infra/config/
