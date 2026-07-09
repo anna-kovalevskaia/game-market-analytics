@@ -5,3 +5,6 @@ __pycache__/
 01-admin.xml
 infra/logs/
 infra/config/
+dbt/.user.yml
+dbt/target/
+dbt/logs/
