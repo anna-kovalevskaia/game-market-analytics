@@ -128,7 +128,7 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 - **IDE:** VS Code
 - **AI Assistant:** Continue.dev with local & cloud AI models via Ollama
 - **Containerization:** Docker Desktop — for orchestrating Airflow, ClickHouse, and dbt
-- **Python:** 3.12 in an isolated virtual environment (.venv)
+- **Python:** 3.10 in an isolated virtual environment (.venv)
 - **Environment Setup:** see [infra/setup.md](infra/setup.md)
 
 #### Supported AI Models
@@ -148,7 +148,7 @@ Models are configured via Ollama and accessed through Continue:
 **Embedding Model:**
 - `nomic-embed-text` — For codebase indexing and semantic search
 
-For detailed setup instructions, see [infra/README.md](infra/README.md#6-ai-assistant-setup-with-continue-and-ollama).
+For detailed setup instructions, see [infra/setup.md](infra/README.md#6-ai-assistant-setup-with-continue-and-ollama).
 
 
 ## Project Structure

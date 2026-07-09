@@ -66,7 +66,7 @@ cd game-market-analytics
 
 #### Check Python Version
 
-Before creating the environment, verify that Python 3.12 is installed on your machine:
+Before creating the environment, verify that Python 3.10 is installed on your machine:
 
 ```bash
 # On Windows (using the Python Launcher)
@@ -77,7 +77,7 @@ python3 --version
 ```
 
 > ⚠️ **Important (Windows):** If your terminal states that Python is not found,
-> download Python 3.12 directly from [Python.org](https://www.python.org/downloads/release/python-3120/).
+> download Python 3.10 directly from [Python.org](https://www.python.org/downloads/release/python-3120/).
 > Run the installer and **strictly check the box that says "Add python.exe to PATH"**
 > on the very first screen.
 
@@ -87,10 +87,10 @@ Run the following command inside the root `game-market-analytics` directory to g
 
 ```bash
 # On Windows
-py -3.12 -m venv .venv
+py -3.10 -m venv .venv
 
 # On macOS / Linux
-python3.12 -m venv .venv
+python3.10 -m venv .venv
 ```
 
 #### Select Python Interpreter in VS Code
