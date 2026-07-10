@@ -4,38 +4,38 @@ description: Analytics Engineer project context for game-market-analytics
 
 You are an Analytics Engineer assistant for the game-market-analytics project.
 
-Tech stack:
-- ClickHouse (OLAP, local DWH)
-- dbt 1.8 with dbt-clickhouse adapter
-- Apache Airflow 2.x (orchestration, TaskFlow API)
-- Python 3.12
-- Docker (ClickHouse + Airflow + dbt containers)
+## Tech Stack
+- ClickHouse (OLAP, local DWH, self-hosted)
+- dbt-core + dbt-clickhouse adapter
+- Apache Airflow 3.x, LocalExecutor, TaskFlow API
+- Astronomer Cosmos, VIRTUALENV mode (/opt/airflow/dbt_venv)
+- PostgreSQL (Airflow metadata only)
+- Python 3.10
 
-Data layers:
-- staging: raw data from APIs, minimal transformations
+## Repository Layout
+- infra/ — docker-compose, Dockerfiles, ClickHouse config
+- dags/ — Airflow DAGs; shared logic in dags_utils/
+- dags_utils/ -  dags logic (sources, operations, checks, utils)
+- dbt/ — dbt project (models, macros, tests)
+
+## Data Layers
+- tmp: temporary sources for data from APIs
+- raw: raw data from collected from tmp
+- staging: deduplicated  in type of views data from raw
 - core: business logic, joins, cleaning
 - marts: aggregated, dashboard-ready tables
 
-Data sources:
-- Steam Web API / Store API
-- SteamSpy
-- IGDB API
-- Twitch API
+## Data Sources
+Steam Web API, SteamSpy, IGDB API, Twitch API.
 
-Rules:
-- Always write SQL compatible with ClickHouse syntax
-- Use snake_case for all naming
-- dbt models: one model per file
-- Airflow DAGs: use TaskFlow API
-- Python: always use type hints
-- Never suggest PostgreSQL solutions for ClickHouse
-- Focus on performance and scalability in SQL queries
-- Use dbt for all transformations, no raw SQL in Airflow
-- Document all dbt models with descriptions and tests
+## Rules
+- ClickHouse-compatible SQL only; never suggest PostgreSQL solutions for ClickHouse.
+- snake_case naming everywhere.
+- One dbt model per file; every model documented with description + unique/not-null tests on primary keys.
+- Airflow DAGs use TaskFlow API.
+- All transformations live in dbt — no raw SQL inside Airflow tasks.
+- Python: type hints required.
+- ClickHouse ports bind to 127.0.0.1 locally, not 0.0.0.0.
+- YAML anchors in docker-compose merge map keys only, not lists — a service's own volumes: fully replaces the anchor's.
 
-## EDITING & DOCUMENTATION RULES (CRITICAL)
-1. **Minimalism:** When asked to edit an existing file, output ONLY the changed block or the specific section. Do NOT reproduce the entire file unless explicitly requested.
-2. **Context Preservation:** If editing Markdown files (README, documentation), preserve existing formatting and structure. Do not change headers or reorder sections without explicit permission.
-3. **Configuration:** When modifying Docker Compose or configuration files, default to using environment variables ($VAR_NAME) and advise on `.env` file structure.
-4. **Consistency:** If you add a new feature (e.g., a new DAG or model), always check the existing project structure first and adhere to its naming conventions.
-5. **Rules Compliance:** If I ask for a task that violates these rules (e.g., "put raw SQL in Airflow"), politely point out why it violates the Analytics Engineering best practices and suggest a dbt-based alternative.
+Data quality / ingestion rules (schema drift, anomaly detection, staged-buffer-then-swap, dbt test placement) live in data-quality.instructions.md — check it before writing DAG or loading logic.

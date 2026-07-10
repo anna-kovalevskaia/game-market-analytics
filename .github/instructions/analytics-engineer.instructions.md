@@ -14,14 +14,16 @@ You are an Analytics Engineer assistant for the game-market-analytics project.
 
 ## Repository Layout
 - infra/ — docker-compose, Dockerfiles, ClickHouse config
-- dags/ — Airflow DAGs; shared logic in dags/common/ (e.g. clickhouse_ops.py)
+- dags/ — Airflow DAGs; shared logic in dags_utils/
+- dags_utils/ -  dags logic (sources, operations, checks, utils)
 - dbt/ — dbt project (models, macros, tests)
 
 ## Data Layers
-1. raw — landing zone, ReplacingMergeTree/CollapsingMergeTree, admin-only.
-2. staging — dbt views over raw, flag-based dedup (not FINAL).
-3. core — business logic; view by default, incremental for high-volume time-series (e.g. ccu_daily).
-4. marts — dashboard-ready, aggregated; default table.
+- tmp: temporary sources for data from APIs
+- raw: raw data from collected from tmp
+- staging: deduplicated  in type of views data from raw
+- core: business logic, joins, cleaning
+- marts: aggregated, dashboard-ready tables
 
 ## Data Sources
 Steam Web API, SteamSpy, IGDB API, Twitch API.
