@@ -59,7 +59,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 
 | Tool | Role | Why this, not alternatives |
 |---|---|---|
-| Apache Airflow | Orchestration | Python-native DAGs with dependency management, retry logic, UI, and alerting. Chosen over Prefect (official dbt integration abandoned in 2024) and Dagster (less common in job market). Rich ecosystem of providers. |
+| Apache Airflow | Orchestration | Python-native DAGs with dependency management, retry logic, UI, and alerting. (It might be better to use Dagster or Prefect for a project like this) |
 | ClickHouse | Data warehouse | Columnar OLAP database optimized for sub-second aggregations on append-only time-series data. PostgreSQL is OLTP and slow on analytical queries. Cloud solutions (AWS, Databricks) are unnecessary overhead without a public assistant - added in Phase 3 when public access requires it. |
 | dbt | Transformation layer | Data-as-Code: Staging -> Core -> Marts, with auto-generated lineage graph, documentation, Jinja macros, and data quality tests. SQL models are readable and maintainable unlike raw ETL scripts. |
 | Google Sheets | Cloud buffer | Lightweight, free cloud layer for publishing dashboard-ready marts from local DWH to the BI layer - no server required. Only pre-aggregated, dashboard-ready data is pushed to the cloud. |
