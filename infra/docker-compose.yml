@@ -28,6 +28,7 @@ x-airflow-common:
   volumes:
     # DAGs and dbt project
     - ${AIRFLOW_PROJ_DIR:-.}/../dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/../tmp:/opt/airflow/tmp
     - ${AIRFLOW_PROJ_DIR:-.}/../dags_utils:/opt/airflow/dags_utils
     - ${AIRFLOW_PROJ_DIR:-.}/../dbt:/opt/airflow/dbt
     # Airflow internals
@@ -139,7 +140,7 @@ services:
     command:
       - -c
       - |
-        chown -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,plugins}
+        chown -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,plugins,tmp}
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env

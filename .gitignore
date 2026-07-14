@@ -9,3 +9,4 @@ dbt/.user.yml
 dbt/target/
 dbt/logs/
 dags_utils/note.md
+tmp/
