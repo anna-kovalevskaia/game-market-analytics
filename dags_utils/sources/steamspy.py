@@ -47,7 +47,6 @@ class SteamSpyClient:
         stop_after_empty_pages: int,
         delay_seconds: int,
     ) -> Iterator[tuple[str, dict[str, Any]]]:
-        """Итератор по всем страницам SteamSpy ?request=all. Возвращает {appid_str: {info}}."""
 
 
         if max_pages < 1:
@@ -102,3 +101,4 @@ class SteamSpyClient:
     #   steamspy_get_top100owned()       -> {"request": "top100owned"} -- maybe unnecessary
     #   steamspy_get_genre(genre)        -> {"request": "genre", "genre": genre} -- not needed, can get from steamspy_get_appdetails
     #   steamspy_get_tag(tag)            -> {"request": "tag", "tag": tag} -- not needed, can get from steamspy_get_appdetails
+
