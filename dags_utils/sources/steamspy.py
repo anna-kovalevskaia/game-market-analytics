@@ -2,7 +2,6 @@ import logging
 import time
 from collections.abc import Iterator
 from typing import Any
-
 import requests
 # from airflow.models import Variable
 
@@ -46,8 +45,9 @@ class SteamSpyClient:
         self,
         max_pages: int,
         stop_after_empty_pages: int,
-        delay_seconds: float,
-    ) -> Iterator[dict[str, Any]]:
+        delay_seconds: int,
+    ) -> Iterator[tuple[str, dict[str, Any]]]:
+
 
         if max_pages < 1:
             raise SteamSpyParameterError(f"max_pages must be >= 1, got {max_pages}")
@@ -77,10 +77,10 @@ class SteamSpyClient:
                     )
                     return
                 continue
-            
+
             empty_in_a_row = 0
             logger.info("SteamSpy page=%s ok, keys=%s", page, len(data))
-            yield data
+            yield str(page), data
         else:
             logger.warning(
                 "SteamSpy: reached max_pages=%s without %s consecutive empty pages - "
@@ -101,3 +101,4 @@ class SteamSpyClient:
     #   steamspy_get_top100owned()       -> {"request": "top100owned"} -- maybe unnecessary
     #   steamspy_get_genre(genre)        -> {"request": "genre", "genre": genre} -- not needed, can get from steamspy_get_appdetails
     #   steamspy_get_tag(tag)            -> {"request": "tag", "tag": tag} -- not needed, can get from steamspy_get_appdetails
+
