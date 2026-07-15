@@ -1,10 +1,8 @@
 import logging
-from typing import Optional
+from pathlib import Path
 
 import polars as pl
 from pydantic import BaseModel, ConfigDict
-
-from pathlib import Path
 
 from dags_utils.sources.steamspy import SteamSpyClient
 
@@ -17,27 +15,26 @@ class IterArguments(BaseModel):
     delay_seconds: float
 
 
-
 class SteamSpyAllModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
-
+    
     appid: int
     name: str
-    developer: Optional[str] = None
-    publisher: Optional[str] = None
-    score_rank: Optional[str] = None
-    positive: Optional[int] = None
-    negative: Optional[int] = None
-    userscore: Optional[int] = None
-    owners: Optional[str] = None
-    average_forever: Optional[float] = None
-    average_2weeks: Optional[float] = None
-    median_forever: Optional[float] = None
-    median_2weeks: Optional[float] = None
-    price: Optional[float] = None
-    initialprice: Optional[float] = None
-    discount: Optional[float] = None
-    ccu: Optional[int] = None
+    developer: str | None = None
+    publisher: str | None = None
+    score_rank: str | None = None
+    positive: int | None = None
+    negative: int | None = None
+    userscore: int | None = None
+    owners: str | None = None
+    average_forever: float | None = None
+    average_2weeks: float | None = None
+    median_forever: float | None = None
+    median_2weeks: float | None = None
+    price: float | None = None
+    initialprice: float | None = None
+    discount: float | None = None
+    ccu: int | None = None
 
 
 def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -> None:
@@ -48,23 +45,21 @@ def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -
 
 
 def steamspy_all_extract_to_tmp(
-        client: SteamSpyClient,
-        run_id: str,
-        file_path: str,
-        **kwargs
-    ) -> str:
+    client: SteamSpyClient,
+    run_id: str,
+    file_path: str,
+    **kwargs
+) -> str:
     """Process SteamSpy API data."""
-    parent_path = Path(file_path)/run_id
+    parent_path = Path(file_path) / run_id
     parent_path.mkdir(parents=True, exist_ok=True)
-  
+    
     for page_num, page_data in client.steamspy_iter_all(IterArguments(**kwargs)):
-
         validate_result = [SteamSpyAllModel(**row) for row in page_data.values()]
         logger.info("SteamSpy validated page=%s records=%s", page_num, len(validate_result))
-
-        full_file_path = parent_path/f"page_{page_num}.parquet"
-
+        
+        full_file_path = parent_path / f"page_{page_num}.parquet"
         _steamspy_write_to_tmp(validate_result, full_file_path)
         logger.info("SteamSpy written %s", page_num)
-
+        
     return str(parent_path)
