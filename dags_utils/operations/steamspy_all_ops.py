@@ -40,7 +40,7 @@ class SteamSpyAllModel(BaseModel):
     ccu: Optional[int] = None
 
 
-def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path):
+def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -> None:
     """Write SteamSpy data to a temporary file."""
     models = [row.model_dump() for row in data]
     df = pl.DataFrame(models)
