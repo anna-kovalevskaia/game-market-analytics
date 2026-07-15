@@ -76,9 +76,7 @@ class SteamSpyClient:
                     stop_after_empty_pages,
                 )
                 if empty_in_a_row >= stop_after_empty_pages:
-                    logger.info(
-                        "SteamSpy: stop after %s consecutive empty pages", empty_in_a_row
-                    )
+                    logger.info("SteamSpy: stop after %s consecutive empty pages", empty_in_a_row)
                     return
                 continue
 

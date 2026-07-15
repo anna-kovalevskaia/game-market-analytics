@@ -17,7 +17,7 @@ class IterArguments(BaseModel):
 
 class SteamSpyAllModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     appid: int
     name: str
     developer: str | None = None
@@ -45,21 +45,18 @@ def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -
 
 
 def steamspy_all_extract_to_tmp(
-    client: SteamSpyClient,
-    run_id: str,
-    file_path: str,
-    **kwargs
+    client: SteamSpyClient, run_id: str, file_path: str, **kwargs
 ) -> str:
     """Process SteamSpy API data."""
     parent_path = Path(file_path) / run_id
     parent_path.mkdir(parents=True, exist_ok=True)
-    
+
     for page_num, page_data in client.steamspy_iter_all(IterArguments(**kwargs)):
         validate_result = [SteamSpyAllModel(**row) for row in page_data.values()]
         logger.info("SteamSpy validated page=%s records=%s", page_num, len(validate_result))
-        
+
         full_file_path = parent_path / f"page_{page_num}.parquet"
         _steamspy_write_to_tmp(validate_result, full_file_path)
         logger.info("SteamSpy written %s", page_num)
-        
+
     return str(parent_path)
