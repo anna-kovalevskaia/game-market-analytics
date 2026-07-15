@@ -2,7 +2,9 @@ import logging
 import time
 from collections.abc import Iterator
 from typing import Any
+
 import requests
+
 # from airflow.models import Variable
 
 logger = logging.getLogger(__name__)
@@ -11,8 +13,10 @@ logger = logging.getLogger(__name__)
 class SteamSpyConnectionError(Exception):
     """Raised on a SteamSpy API/network failure (bad response, timeout, etc.)."""
 
+
 class SteamSpyParameterError(Exception):
     """Raised on invalid parameters for SteamSpy API calls."""
+
 
 class SteamSpyClient:
     """HTTP-клиент SteamSpy API.
@@ -22,7 +26,7 @@ class SteamSpyClient:
     """
 
     def __init__(self, timeout: int) -> None:
-        self._base_url = ('https://steamspy.com/api.php').rstrip("/")
+        self._base_url = ("https://steamspy.com/api.php").rstrip("/")
         self._timeout = timeout
         self._session = requests.Session()
 
@@ -47,12 +51,12 @@ class SteamSpyClient:
         stop_after_empty_pages: int,
         delay_seconds: int,
     ) -> Iterator[tuple[str, dict[str, Any]]]:
-
-
         if max_pages < 1:
             raise SteamSpyParameterError(f"max_pages must be >= 1, got {max_pages}")
         if stop_after_empty_pages < 1:
-            raise SteamSpyParameterError(f"stop_after_empty_pages must be >= 1, got {stop_after_empty_pages}")
+            raise SteamSpyParameterError(
+                f"stop_after_empty_pages must be >= 1, got {stop_after_empty_pages}"
+            )
         if delay_seconds < 0:
             raise SteamSpyParameterError(f"delay_seconds must be >= 0, got {delay_seconds}")
 
@@ -72,9 +76,7 @@ class SteamSpyClient:
                     stop_after_empty_pages,
                 )
                 if empty_in_a_row >= stop_after_empty_pages:
-                    logger.info(
-                        "SteamSpy: stop after %s consecutive empty pages", empty_in_a_row
-                    )
+                    logger.info("SteamSpy: stop after %s consecutive empty pages", empty_in_a_row)
                     return
                 continue
 
@@ -96,9 +98,10 @@ class SteamSpyClient:
         return self._get({"request": "appdetails", "appid": appid})
 
     # ---------- request=top100* / genre / tag ----------
-    #   steamspy_get_top100in2weeks()    -> {"request": "top100in2weeks"} -- maybe unnecessary
-    #   steamspy_get_top100forever()     -> {"request": "top100forever"} -- maybe unnecessary
-    #   steamspy_get_top100owned()       -> {"request": "top100owned"} -- maybe unnecessary
-    #   steamspy_get_genre(genre)        -> {"request": "genre", "genre": genre} -- not needed, can get from steamspy_get_appdetails
-    #   steamspy_get_tag(tag)            -> {"request": "tag", "tag": tag} -- not needed, can get from steamspy_get_appdetails
-
+    #   steamspy_get_top100in2weeks() -> {"request": "top100in2weeks"} -- maybe unnecessary
+    #   steamspy_get_top100forever()  -> {"request": "top100forever"} -- maybe unnecessary
+    #   steamspy_get_top100owned()    -> {"request": "top100owned"} -- maybe unnecessary
+    #   steamspy_get_genre(genre)     -> {"request": "genre", "genre": genre}
+    #                                  -- not needed, can get from steamspy_get_appdetails
+    #   steamspy_get_tag(tag)         -> {"request": "tag", "tag": tag}
+    #                                  -- not needed, can get from steamspy_get_appdetails
