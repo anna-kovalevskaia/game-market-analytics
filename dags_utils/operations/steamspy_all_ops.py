@@ -51,7 +51,10 @@ def steamspy_all_extract_to_tmp(
     parent_path = Path(file_path) / run_id
     parent_path.mkdir(parents=True, exist_ok=True)
 
-    for page_num, page_data in client.steamspy_iter_all(IterArguments(**kwargs)):
+    iter_args = IterArguments(**kwargs)
+    for page_num, page_data in client.steamspy_iter_all(
+        iter_args.max_pages, iter_args.stop_after_empty_pages, iter_args.delay_seconds
+    ):
         validate_result = [SteamSpyAllModel(**row) for row in page_data.values()]
         logger.info("SteamSpy validated page=%s records=%s", page_num, len(validate_result))
 
