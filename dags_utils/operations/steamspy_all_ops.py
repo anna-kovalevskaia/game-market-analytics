@@ -2,7 +2,8 @@ import logging
 from pathlib import Path
 
 import polars as pl
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
+from pydantic_models.steamspy_all_model import SteamSpyAllModel
 
 from dags_utils.sources.steamspy import SteamSpyClient
 
@@ -13,28 +14,6 @@ class IterArguments(BaseModel):
     max_pages: int
     stop_after_empty_pages: int
     delay_seconds: float
-
-
-class SteamSpyAllModel(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    appid: int
-    name: str
-    developer: str | None = None
-    publisher: str | None = None
-    score_rank: str | None = None
-    positive: int | None = None
-    negative: int | None = None
-    userscore: int | None = None
-    owners: str | None = None
-    average_forever: float | None = None
-    average_2weeks: float | None = None
-    median_forever: float | None = None
-    median_2weeks: float | None = None
-    price: float | None = None
-    initialprice: float | None = None
-    discount: float | None = None
-    ccu: int | None = None
 
 
 def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -> None:
