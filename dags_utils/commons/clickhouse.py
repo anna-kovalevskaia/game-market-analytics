@@ -7,6 +7,7 @@ from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
 
+
 class ClickHouseParameterError(Exception):
     """Raised on invalid parameters passed to ClickHouseClient methods."""
 
@@ -80,5 +81,8 @@ class ClickHouseClient:
                 ) from exc
             logger.info(
                 "ClickHouse inserted batch %s-%s (%s files) into %s",
-                i, i + len(chunk), len(chunk), table_name,
+                i,
+                i + len(chunk),
+                len(chunk),
+                table_name,
             )

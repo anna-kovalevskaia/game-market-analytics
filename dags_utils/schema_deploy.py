@@ -13,16 +13,18 @@ class SchemaMappingError(Exception):
     """Raised when a Pydantic field cannot be mapped to a ClickHouse type."""
 
 
-_BASE_TYPE_MAP: MappingProxyType[Any, str] = MappingProxyType({
-    int: "Int64",
-    float: "Float64",
-    str: "String",
-    bool: "UInt8",
-    datetime: "DateTime64(6)",
-    list[str]: "Array(String)",
-    list[int]: "Array(Int64)",
-    list[float]: "Array(Float64)",
-})
+_BASE_TYPE_MAP: MappingProxyType[Any, str] = MappingProxyType(
+    {
+        int: "Int64",
+        float: "Float64",
+        str: "String",
+        bool: "UInt8",
+        datetime: "DateTime64(6)",
+        list[str]: "Array(String)",
+        list[int]: "Array(Int64)",
+        list[float]: "Array(Float64)",
+    }
+)
 
 _ARRAY_TYPES = {list[str], list[int], list[float]}
 
@@ -39,9 +41,7 @@ def _resolve_ch_type(annotation: Any) -> str | None:
         if not any(a is type(None) for a in args):
             raise SchemaMappingError("One of the types must be None.")
 
-        inner_annotation = next(
-            arg for arg in args if arg is not type(None)
-        )
+        inner_annotation = next(arg for arg in args if arg is not type(None))
 
         if inner_annotation in _ARRAY_TYPES:
             return _BASE_TYPE_MAP.get(inner_annotation)
