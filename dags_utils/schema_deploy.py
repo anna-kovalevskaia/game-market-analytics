@@ -1,8 +1,8 @@
 import logging
-from datetime import datetime
-from typing import Any, Union, get_args, get_origin
-from types import MappingProxyType
 import types
+from datetime import datetime
+from types import MappingProxyType
+from typing import Any, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
