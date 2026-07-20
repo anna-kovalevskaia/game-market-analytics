@@ -1,6 +1,4 @@
-import importlib
 import logging
-import pkgutil
 import types
 from datetime import datetime
 from types import MappingProxyType
@@ -67,6 +65,7 @@ def model_to_clickhouse_columns(model: type[BaseModel]) -> str:
 
     logger.info("ClickHouse columns were created: %s", columns)
     return columns
+
 
 def get_changed_models():
     pass
