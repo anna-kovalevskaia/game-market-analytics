@@ -1,4 +1,6 @@
+import importlib
 import logging
+import pkgutil
 import types
 from datetime import datetime
 from types import MappingProxyType
@@ -45,16 +47,30 @@ def _resolve_ch_type(annotation: Any) -> str | None:
 
         if inner_annotation in _ARRAY_TYPES:
             return _BASE_TYPE_MAP.get(inner_annotation)
-        return f"Nullable({_BASE_TYPE_MAP.get(inner_annotation)})"
+
+        base_type = _BASE_TYPE_MAP.get(inner_annotation)
+        if base_type is None:
+            raise SchemaMappingError(f"unsupported inner type in Optional: {inner_annotation!r}")
+
+        return f"Nullable({base_type})"
     elif origin in (None, list):
         return _BASE_TYPE_MAP.get(annotation)
 
 
-def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[str]:
+def model_to_clickhouse_columns(model: type[BaseModel]) -> str:
     columns: list[str] = []
     for name, field in model.model_fields.items():
         ch_type = _resolve_ch_type(field.annotation)
         if ch_type is None:
             raise SchemaMappingError(f"unsupported field {name!r}: {field.annotation!r}")
-        columns.append(f"`{name}` {ch_type}")
+        columns.append(f"{name} {ch_type}")
+
+    logger.info("ClickHouse columns were created: %s", columns)
     return columns
+
+def get_changed_models():
+    pass
+
+
+def create_ddl():
+    pass
