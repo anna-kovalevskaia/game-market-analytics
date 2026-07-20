@@ -68,6 +68,7 @@ def model_to_clickhouse_columns(model: type[BaseModel]) -> str:
 
 
 def get_changed_models():
+
     pass
 
 
