@@ -34,12 +34,12 @@ class ClickHouseClient:
         self._client.command(sql)
 
     def create_table_from_data_model(
-        self,     
+        self,
         table_name: str,
         columns: list[str],  # [(name, clickhouse_type), ...]
         order_by: str,
         engine: str = "MergeTree",
-        partition_by: str = "toStartOfMonth(last_update)"
+        partition_by: str = "toStartOfMonth(last_update)",
     ) -> None:
 
         cols_sql = ",\n    ".join(columns)
