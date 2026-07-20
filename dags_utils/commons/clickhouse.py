@@ -33,17 +33,20 @@ class ClickHouseClient:
         logger.info("ClickHouse execute: %s", sql[:200])
         self._client.command(sql)
 
-    def create_table(
+    def create_table_from_data_model(
         self,
         table_name: str,
-        columns: list[tuple[str, str]],  # [(name, clickhouse_type), ...]
-        engine: str,
+        columns: list[str],  # [(name, clickhouse_type), ...]
         order_by: str,
-        partition_by: str | None = None,
+        engine: str = "MergeTree",
+        partition_by: str = "toStartOfMonth(last_update)",
     ) -> None:
-        cols_sql = ",\n    ".join(f"`{n}` {t}" for n, t in columns)
+
+        cols_sql = ",\n    ".join(columns)
+        cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
+
         parts = [
-            f"CREATE TABLE IF NOT EXISTS `{table_name}` (\n    {cols_sql}\n)",
+            f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {cols_sql}\n)",
             f"ENGINE = {engine}",
         ]
         if partition_by:

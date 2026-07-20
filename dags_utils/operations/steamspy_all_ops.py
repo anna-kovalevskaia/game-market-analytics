@@ -3,9 +3,9 @@ from pathlib import Path
 
 import polars as pl
 from pydantic import BaseModel
-from pydantic_models.steamspy_all_model import SteamSpyAllModel
 
 from dags_utils.sources.steamspy import SteamSpyClient
+from data_models.steamspy_all import SteamSpyAllModel
 
 logger = logging.getLogger(__name__)
 
