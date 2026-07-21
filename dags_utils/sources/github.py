@@ -2,6 +2,7 @@ import logging
 
 import requests
 from airflow.hooks.base import BaseHook
+from airflow.sdk import Variable
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +17,17 @@ class GitHubParameterError(Exception):
 
 class GitHubClient:
 
-    def __init__(self, repo: str, timeout: int) -> None:
+    def __init__(
+        self, repo: str | None = None, timeout: int | None = None, branch: str | None = None
+    ) -> None:
+        if repo is None or timeout is None:
+            cfg = Variable.get("github_config", deserialize_json=True)
+            repo = repo or cfg["repo"]
+            timeout = timeout or cfg["timeout"]
+            branch = branch or cfg["branch"]
         self._repo = repo
         self._timeout = timeout
+        self._branch = branch
         self._token = BaseHook.get_connection("github_token").password
         self._base_url = "https://api.github.com"
         self._session = requests.Session()
@@ -29,12 +38,12 @@ class GitHubClient:
             "Accept": "application/vnd.github+json",
         }
 
-    def get_latest_commit_sha(self, branch: str = "main") -> str:
+    def get_latest_commit_sha(self) -> str:
 
-        if not branch:
+        if not self._branch:
             raise GitHubParameterError("branch must be non-empty")
 
-        url = f"{self._base_url}/repos/{self._repo}/commits/{branch}"
+        url = f"{self._base_url}/repos/{self._repo}/commits/{self._branch}"
         try:
             response = self._session.get(url, headers=self._get_headers(), timeout=self._timeout)
             response.raise_for_status()

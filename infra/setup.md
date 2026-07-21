@@ -14,9 +14,10 @@ Follow these steps to prepare the local development environment for this project
 * [6. Prepare Environment Variables and Secrets](#6-prepare-environment-variables-and-secrets)
   * [Step 1: Create the .env File](#step-1-create-the-env-file)
   * [Step 2: Generate the Airflow Fernet Key](#step-2-generate-the-airflow-fernet-key)
-  * [Step 3: Review .env Values](#step-3-review-env-values)
-  * [Step 4: Create the ClickHouse Admin User](#step-4-create-the-clickhouse-admin-user)
-  * [Step 5: Rotating the Admin Password](#step-5-rotating-the-admin-password-only-if-you-have-changed-the-admin-password-if-needed)
+  * [Step 3: Generate the Airflow JWT Secret](#step-3-generate-the-airflow-jwt-secret)
+  * [Step 4: Review .env Values](#step-4-review-env-values)
+  * [Step 5: Create the ClickHouse Admin User](#step-5-create-the-clickhouse-admin-user)
+  * [Step 6: Rotating the Admin Password](#step-6-rotating-the-admin-password-only-if-you-have-changed-the-admin-password-if-needed)
 * [7. Launch Docker Containers](#7-launch-docker-containers)
 * [8. AI Assistant Setup with Continue and Ollama (Optional)](#8-ai-assistant-setup-with-continue-and-ollama-optional)
 
@@ -169,7 +170,35 @@ AIRFLOW__CORE__FERNET_KEY=your_generated_key_here
 
 > ⚠️ **Never regenerate this key** after the first run. If lost, all encrypted Airflow data must be re-entered manually.
 
-#### Step 3: Review `.env` Values
+#### Step 3: Generate the Airflow JWT Secret
+
+In Airflow 3, every task runs through the **Task Execution API** served by the api-server. Before running your code, the task supervisor authenticates to that API with a JWT signed by `AIRFLOW__API_AUTH__JWT_SECRET`.
+
+Because the scheduler, dag-processor and api-server run in **separate containers**, they must all sign and verify tokens with the **same** secret. If it is not set, each container generates its own random value on startup, so they never match — and every task fails immediately with `Invalid auth token: Signature verification failed`, before it can even write a log.
+
+Generate the secret once and share it via `.env`:
+
+```bash
+python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+```
+
+Copy the output and set it in `infra/.env`:
+
+```bash
+_AIRFLOW__API_AUTH__JWT_SECRET=your_generated_jwt_secret_here
+```
+
+> ⚠️ Keep this value stable across restarts. Unlike the Fernet key it does not encrypt stored data, but changing it invalidates any in-flight task tokens (currently running tasks fail).
+
+**Verify the value resolves identically for every Airflow service.** From the `infra/` directory, run:
+
+```bash
+docker compose config | grep JWT_SECRET | sort -u
+```
+
+You should see exactly **one** unique line — confirming the scheduler, dag-processor and api-server will all use the same secret. More than one line (or an empty value) means the variable is missing or mistyped in `.env`.
+
+#### Step 4: Review `.env` Values
 
 Your final `infra/.env` should look like this:
 
@@ -177,6 +206,7 @@ Your final `infra/.env` should look like this:
 # Airflow
 AIRFLOW_UID=50000
 AIRFLOW__CORE__FERNET_KEY=your_generated_fernet_key
+_AIRFLOW__API_AUTH__JWT_SECRET=your_generated_jwt_secret
 _AIRFLOW_WWW_USER_USERNAME=your_airflow_username
 _AIRFLOW_WWW_USER_PASSWORD=your_airflow_password
 
@@ -200,7 +230,7 @@ CLICKHOUSE_ADMIN_PASSWORD=your_admin_password
 
 > 💡 **Note:** The `.env` file is listed in `.gitignore` and will never be committed to the repository. Only `.env.example` (with placeholder values) is tracked by Git.
 
-#### Step 4: Create the ClickHouse Admin User
+#### Step 5: Create the ClickHouse Admin User
 
 ```bash
 # Copy template
@@ -214,7 +244,7 @@ sed -i "s|REPLACE_WITH_SHA256_OF_YOUR_PASSWORD|$HASH|" infra/clickhouse/users.d/
 ```
 > 💡 **Note:** The `01-admin.xml` file is listed in `.gitignore` and will never be committed to the repository. Only `01-admin.xml.example` (with placeholder values) is tracked by Git.
 
-#### Step 5: Rotating the Admin Password (only if you have changed the admin password if needed)
+#### Step 6: Rotating the Admin Password (only if you have changed the admin password if needed)
 
 ```bash
 NEW_HASH=$(echo -n "new_password" | sha256sum | awk '{print $1}')
