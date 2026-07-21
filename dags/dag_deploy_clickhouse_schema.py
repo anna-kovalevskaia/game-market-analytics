@@ -2,7 +2,6 @@ import logging
 from datetime import timedelta
 
 from airflow.sdk import Variable, dag, task
-
 from pendulum import datetime
 
 from dags_utils.commons.clickhouse import ClickHouseClient
