@@ -4,7 +4,6 @@ from collections.abc import Iterator
 from typing import Any
 
 import requests
-
 from airflow.models import Variable
 
 logger = logging.getLogger(__name__)

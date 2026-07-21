@@ -7,8 +7,8 @@ from typing import Any, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
-from dags_utils.sources.github import GitHubClient
 from dags_utils.commons.clickhouse import ClickHouseClient
+from dags_utils.sources.github import GitHubClient
 
 logger = logging.getLogger(__name__)
 
@@ -134,8 +134,8 @@ def _file_path_to_module_name(file_path: str) -> str:
 
 
 def check_new_commit(
-        client: GitHubClient, last_sha: str, branch: str = "main"
-    ) -> tuple[str, str] | None:
+    client: GitHubClient, last_sha: str, branch: str = "main"
+) -> tuple[str, str] | None:
 
     current_sha = client.get_latest_commit_sha(branch)
     if current_sha == last_sha:
