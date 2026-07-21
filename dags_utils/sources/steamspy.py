@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-# from airflow.models import Variable
+from airflow.models import Variable
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class SteamSpyClient:
     """
 
     def __init__(self, timeout: int) -> None:
-        self._base_url = ("https://steamspy.com/api.php").rstrip("/")
+        self._base_url = Variable.get("steamspy_base_url").rstrip("/")
         self._timeout = timeout
         self._session = requests.Session()
 
