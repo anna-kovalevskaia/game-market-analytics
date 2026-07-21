@@ -63,14 +63,14 @@ def _resolve_ch_type(annotation: Any) -> str | None:
         return _BASE_TYPE_MAP.get(annotation)
 
 
-def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[tuple[str, str]]:
+def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[str]:
     """Map every field of a Pydantic model to a (column_name, clickhouse_type) pair."""
-    columns: list[tuple[str, str]] = []
+    columns: list[str] = []
     for name, field in model.model_fields.items():
         ch_type = _resolve_ch_type(field.annotation)
         if ch_type is None:
             raise SchemaMappingError(f"unsupported field {name!r}: {field.annotation!r}")
-        columns.append((name, ch_type))
+        columns.append(f"{name} {ch_type}")
 
     logger.info("ClickHouse columns resolved for %s: %s", model.__name__, columns)
     return columns
@@ -130,15 +130,14 @@ def _file_path_to_module_name(file_path: str) -> str:
     """'data_models/steamspy_all.py' -> 'data_models.steamspy_all'."""
     if not file_path.endswith(".py"):
         raise SchemaDeployError(f"not a python module path: {file_path!r}")
-    return file_path.removesuffix(".py").replace("/", ".")
+    return file_path.removesuffix(".py").replace("data_models/", "")
 
 
-def check_new_commit(
-    client: GitHubClient, last_sha: str, branch: str = "main"
-) -> tuple[str, str] | None:
+def check_main_new_commit(client: GitHubClient, last_sha: str) -> tuple[str, str] | None:
 
-    current_sha = client.get_latest_commit_sha(branch)
+    current_sha = client.get_latest_commit_sha()
     if current_sha == last_sha:
+        logger.info("no new commits")
         return None
     return (current_sha, last_sha)
 
@@ -146,34 +145,30 @@ def check_new_commit(
 def get_changed_models(
     client: GitHubClient, base_sha: str, head_sha: str
 ) -> dict[str, type[BaseModel]]:
-    """
-    Return the Pydantic models whose module file changed between base_sha
-    (older, previously deployed) and head_sha (newer, current).
 
-    Keys are table names (the module's last name segment, e.g.
-    "steamspy_all" for data_models/steamspy_all.py).
-    """
     changed_files = client.get_changed_files(base_sha=base_sha, head_sha=head_sha)
 
     models: dict[str, type[BaseModel]] = {}
     for file_path in changed_files:
         if not file_path.startswith("data_models/"):
             continue
-        table_name = _file_path_to_module_name(file_path)
-        module = importlib.import_module(f"data_models.{table_name}")
-        models[table_name] = _get_module_model(module)
+        module_name = _file_path_to_module_name(file_path)
+        if module_name.rsplit(".", 1)[-1].startswith("_"):
+            continue
+        module = importlib.import_module(f"data_models.{module_name}")
+        models[module_name] = _get_module_model(module)
 
     return models
 
 
 def deploy_models(client: ClickHouseClient, models: dict[str, type[BaseModel]]) -> None:
 
-    for table_name, model in models.items():
+    for module_name, model in models.items():
         columns = _model_to_clickhouse_columns(model)
         order_by = ", ".join(_get_order_by_columns(model))
         client.create_table_from_data_model(
-            table_name=table_name,
+            table_name=module_name,
             columns=columns,
             order_by=order_by,
         )
-        logger.info("Deployed table %r from model %r", table_name, model.__name__)
+        logger.info("Deployed table %r from model %r", module_name, model.__name__)
