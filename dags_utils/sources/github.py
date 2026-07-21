@@ -36,9 +36,7 @@ class GitHubClient:
 
         url = f"{self._base_url}/repos/{self._repo}/commits/{branch}"
         try:
-            response = self._session.get(
-                url, headers=self._get_headers(), timeout=self._timeout
-            )
+            response = self._session.get(url, headers=self._get_headers(), timeout=self._timeout)
             response.raise_for_status()
         except requests.RequestException as exc:
             raise GitHubConnectionError(f"GitHub request failed: {url}") from exc
@@ -52,9 +50,7 @@ class GitHubClient:
 
         url = f"{self._base_url}/repos/{self._repo}/compare/{base_sha}...{head_sha}"
         try:
-            response = self._session.get(
-                url, headers=self._get_headers(), timeout=self._timeout
-            )
+            response = self._session.get(url, headers=self._get_headers(), timeout=self._timeout)
             response.raise_for_status()
         except requests.RequestException as exc:
             raise GitHubConnectionError(f"GitHub compare failed: {url}") from exc
