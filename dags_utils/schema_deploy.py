@@ -133,9 +133,7 @@ def _file_path_to_module_name(file_path: str) -> str:
     return file_path.removesuffix(".py").replace("data_models/", "")
 
 
-def check_main_new_commit(
-    client: GitHubClient, last_sha: str
-) -> tuple[str, str] | None:
+def check_main_new_commit(client: GitHubClient, last_sha: str) -> tuple[str, str] | None:
 
     current_sha = client.get_latest_commit_sha()
     if current_sha == last_sha:

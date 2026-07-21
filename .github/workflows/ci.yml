@@ -50,6 +50,10 @@ jobs:
         run: pip install apache-airflow==3.0.0
       - name: dag parse
         working-directory: dags
+        env:
+          # dags/ modules import `dags_utils` from the repo root — mirror the
+          # container's PYTHONPATH=/opt/airflow so the parse can resolve them.
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           python -c "
           from airflow.models import DagBag
