@@ -27,4 +27,4 @@ class Meta:
     order_by = ("appid", "name")
     partition_by = "toStartOfMonth(last_update)"
     engine = "MergeTree"
-    schema: str = "raw"  # ClickHouse schema/database name
+    schema: str = "raw"

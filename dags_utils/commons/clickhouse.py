@@ -25,7 +25,6 @@ class ClickHouseClient:
             port=conn.port,
             username=conn.login,
             password=conn.password or "",
-            database=conn.schema,
             secure=conn.extra_dejson.get("secure", False),
         )
 
@@ -33,7 +32,7 @@ class ClickHouseClient:
         logger.info("ClickHouse execute: %s", sql[:200])
         self._client.command(sql)
 
-    def create_table_from_data_model(
+    def create_ddl_from_data_model(
         self,
         schema: str,  # ClickHouse schema/database name
         table_name: str,
@@ -41,7 +40,7 @@ class ClickHouseClient:
         order_by: str,
         engine: str = "MergeTree",
         partition_by: str = "toStartOfMonth(last_update)",
-    ) -> None:
+    ) -> str:
 
         cols_sql = ",\n    ".join(columns)
         cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
@@ -53,7 +52,7 @@ class ClickHouseClient:
         if partition_by:
             parts.append(f"PARTITION BY {partition_by}")
         parts.append(f"ORDER BY ({order_by})")
-        self.execute_sql("\n".join(parts))
+        return "\n".join(parts)
 
     def drop_table(self, schema: str, table_name: str, if_exists: bool = True) -> None:
         """DROP TABLE [IF EXISTS]."""
