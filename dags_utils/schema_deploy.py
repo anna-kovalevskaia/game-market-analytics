@@ -1,5 +1,6 @@
 import importlib
 import logging
+from pathlib import Path
 import types
 from datetime import datetime
 from types import MappingProxyType
@@ -156,7 +157,7 @@ def deploy_models(
         order_by = ", ".join(meta.order_by)
         partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
         engine = getattr(meta, "engine", "MergeTree")
-        client.create_table_from_data_model(
+        ddl = client.create_ddl_from_data_model(
             schema=meta.schema,
             table_name=module_name,
             columns=columns,
@@ -164,4 +165,9 @@ def deploy_models(
             engine=engine,
             partition_by=partition_by,
         )
+        parent_path = Path("clickhouse_ddl") / meta.schema / module_name
+        parent_path.mkdir(parents=True, exist_ok=True)
+        (parent_path / f"{module_name}_ddl.sql").write_text(ddl, encoding="utf-8")
+
+        client.execute_sql(ddl)
         logger.info("Deployed table %r from model %r", module_name, model.__name__)
