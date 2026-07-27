@@ -76,27 +76,13 @@ def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[str]:
     return columns
 
 
-def _get_order_by_columns(model: type[BaseModel]) -> list[str]:
-    """
-    Pick candidate ORDER BY columns: fields whose resolved ClickHouse type
-    is neither Nullable(...) nor Array(...). Raises if none qualify —
-    callers must not silently fall back to an arbitrary key.
-    """
-    columns: list[str] = []
-    for name, field in model.model_fields.items():
-        ch_type = _resolve_ch_type(field.annotation)
-        if ch_type is None:
-            raise SchemaMappingError(f"unsupported field {name!r}: {field.annotation!r}")
-        if ch_type.startswith("Nullable(") or ch_type.startswith("Array("):
-            continue
-        columns.append(name)
-
-    if not columns:
-        raise SchemaDeployError(
-            f"model {model.__name__!r} has no non-nullable, non-array field "
-            "eligible for ORDER BY"
-        )
-    return columns
+def _get_module_meta(module: types.ModuleType) -> type:
+    meta = getattr(module, "Meta", None)
+    if not isinstance(meta, type) or meta.__module__ != module.__name__:
+        raise SchemaDeployError(f"module {module.__name__!r} must define a local Meta class")
+    if not getattr(meta, "order_by", None):
+        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty order_by")
+    return meta
 
 
 def _get_module_model(module: types.ModuleType) -> type[BaseModel]:
@@ -144,11 +130,11 @@ def check_main_new_commit(client: GitHubClient, last_sha: str) -> tuple[str, str
 
 def get_changed_models(
     client: GitHubClient, base_sha: str, head_sha: str
-) -> dict[str, type[BaseModel]]:
+) -> dict[str, tuple[type[BaseModel], type]]:
 
     changed_files = client.get_changed_files(base_sha=base_sha, head_sha=head_sha)
 
-    models: dict[str, type[BaseModel]] = {}
+    models: dict[str, tuple[type[BaseModel], type]] = {}
     for file_path in changed_files:
         if not file_path.startswith("data_models/"):
             continue
@@ -156,19 +142,23 @@ def get_changed_models(
         if module_name.rsplit(".", 1)[-1].startswith("_"):
             continue
         module = importlib.import_module(f"data_models.{module_name}")
-        models[module_name] = _get_module_model(module)
+        models[module_name] = (_get_module_model(module), _get_module_meta(module))
 
     return models
 
 
-def deploy_models(client: ClickHouseClient, models: dict[str, type[BaseModel]]) -> None:
+def deploy_models(client: ClickHouseClient, models: dict[str, tuple[type[BaseModel], type]]) -> None:
 
-    for module_name, model in models.items():
+    for module_name, (model, meta) in models.items():
         columns = _model_to_clickhouse_columns(model)
-        order_by = ", ".join(_get_order_by_columns(model))
+        order_by = ", ".join(meta.order_by)
+        partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
+        engine = getattr(meta, "engine", "MergeTree")
         client.create_table_from_data_model(
             table_name=module_name,
             columns=columns,
             order_by=order_by,
+            engine=engine,
+            partition_by=partition_by
         )
         logger.info("Deployed table %r from model %r", module_name, model.__name__)
