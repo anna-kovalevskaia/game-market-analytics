@@ -157,6 +157,7 @@ def deploy_models(
         partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
         engine = getattr(meta, "engine", "MergeTree")
         client.create_table_from_data_model(
+            schema=meta.schema,
             table_name=module_name,
             columns=columns,
             order_by=order_by,

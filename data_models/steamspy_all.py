@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class SteamSpyAllModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -21,9 +22,9 @@ class SteamSpyAllModel(BaseModel):
     discount: float | None = Field(default=None, ge=0)
     ccu: int | None = Field(default=None, ge=0)
 
+
 class Meta:
     order_by = ("appid", "name")
     partition_by = "toStartOfMonth(last_update)"
     engine = "MergeTree"
-
-
+    schema: str = "raw"  # ClickHouse schema/database name
