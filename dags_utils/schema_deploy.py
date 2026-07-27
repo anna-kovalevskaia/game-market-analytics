@@ -148,9 +148,8 @@ def get_changed_models(
 
 
 def deploy_models(
-        client: ClickHouseClient,
-        models: dict[str, tuple[type[BaseModel], type]]
-    ) -> None:
+    client: ClickHouseClient, models: dict[str, tuple[type[BaseModel], type]]
+) -> None:
 
     for module_name, (model, meta) in models.items():
         columns = _model_to_clickhouse_columns(model)
@@ -162,6 +161,6 @@ def deploy_models(
             columns=columns,
             order_by=order_by,
             engine=engine,
-            partition_by=partition_by
+            partition_by=partition_by,
         )
         logger.info("Deployed table %r from model %r", module_name, model.__name__)
