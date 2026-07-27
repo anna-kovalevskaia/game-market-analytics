@@ -147,7 +147,10 @@ def get_changed_models(
     return models
 
 
-def deploy_models(client: ClickHouseClient, models: dict[str, tuple[type[BaseModel], type]]) -> None:
+def deploy_models(
+        client: ClickHouseClient,
+        models: dict[str, tuple[type[BaseModel], type]]
+    ) -> None:
 
     for module_name, (model, meta) in models.items():
         columns = _model_to_clickhouse_columns(model)
