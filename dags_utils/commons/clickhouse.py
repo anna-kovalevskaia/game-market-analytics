@@ -35,6 +35,7 @@ class ClickHouseClient:
 
     def create_table_from_data_model(
         self,
+        schema: str,  # ClickHouse schema/database name
         table_name: str,
         columns: list[str],  # [(name, clickhouse_type), ...]
         order_by: str,
@@ -46,7 +47,7 @@ class ClickHouseClient:
         cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
 
         parts = [
-            f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {cols_sql}\n)",
+            f"CREATE TABLE IF NOT EXISTS {schema}.{table_name} (\n    {cols_sql}\n)",
             f"ENGINE = {engine}",
         ]
         if partition_by:
@@ -54,12 +55,14 @@ class ClickHouseClient:
         parts.append(f"ORDER BY ({order_by})")
         self.execute_sql("\n".join(parts))
 
-    def drop_table(self, table_name: str, if_exists: bool = True) -> None:
+    def drop_table(self, schema: str, table_name: str, if_exists: bool = True) -> None:
         """DROP TABLE [IF EXISTS]."""
         clause = "IF EXISTS " if if_exists else ""
-        self.execute_sql(f"DROP TABLE {clause}`{table_name}`")
+        self.execute_sql(f"DROP TABLE {clause} {schema}.{table_name} ")
 
-    def insert_from_parquet_dir(self, table_name: str, dir_path: str, batch_size: int) -> None:
+    def insert_from_parquet_dir(
+        self, schema: str, table_name: str, dir_path: str, batch_size: int
+    ) -> None:
         """Insert data from Parquet files in a directory into a ClickHouse table."""
         if batch_size < 1:
             raise ClickHouseParameterError(f"batch_size must be >= 1, got {batch_size}")
@@ -77,15 +80,15 @@ class ClickHouseClient:
             chunk = files[i : i + batch_size]
             df = pl.concat([pl.read_parquet(f) for f in chunk])
             try:
-                self._client.insert(table_name, df.rows(), column_names=df.columns)
+                self._client.insert(f"{schema}.{table_name}", df.rows(), column_names=df.columns)
             except Exception as exc:
                 raise ClickHouseOperationError(
-                    f"insert failed for batch {i}-{i + len(chunk)} into {table_name!r}"
+                    f"insert failed for batch {i}-{i + len(chunk)} into {schema}.{table_name!r}"
                 ) from exc
             logger.info(
                 "ClickHouse inserted batch %s-%s (%s files) into %s",
                 i,
                 i + len(chunk),
                 len(chunk),
-                table_name,
+                f"{schema}.{table_name}",
             )

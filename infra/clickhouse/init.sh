@@ -32,17 +32,24 @@ CH_ARGS=(
     "--password=${CLICKHOUSE_ADMIN_PASSWORD}"
 )
 
-clickhouse-client "${CH_ARGS[@]}" \
-    --query "CREATE DATABASE IF NOT EXISTS ${CLICKHOUSE_DB:-analytics}"
+# Warehouse layers — each is a separate ClickHouse database (ClickHouse has no
+# schemas-within-a-database). Keep CLICKHOUSE_DB (dbt/airflow default) inside
+# this list; edit here to add/remove layers.
+CH_DATABASES=(meta raw staging core marts)
+
+AIRFLOW_USER="${CLICKHOUSE_AIRFLOW_USER:-airflow_user}"
 
 clickhouse-client "${CH_ARGS[@]}" \
-    --query "CREATE USER IF NOT EXISTS ${CLICKHOUSE_AIRFLOW_USER:-airflow_user} \
+    --query "CREATE USER IF NOT EXISTS ${AIRFLOW_USER} \
              IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_AIRFLOW_PASSWORD}'"
 
-clickhouse-client "${CH_ARGS[@]}" \
-    --query "GRANT SELECT, INSERT, CREATE, ALTER, DROP, TRUNCATE, SHOW \
-             ON ${CLICKHOUSE_DB:-analytics}.* \
-             TO ${CLICKHOUSE_AIRFLOW_USER:-airflow_user}"
+for db in "${CH_DATABASES[@]}"; do
+    clickhouse-client "${CH_ARGS[@]}" \
+        --query "CREATE DATABASE IF NOT EXISTS ${db}"
+    clickhouse-client "${CH_ARGS[@]}" \
+        --query "GRANT SELECT, INSERT, CREATE, ALTER, DROP, TRUNCATE, SHOW \
+                 ON ${db}.* TO ${AIRFLOW_USER}"
+    echo "✓ database ${db} ready, ${AIRFLOW_USER} granted"
+done
 
-echo "✓ airflow_user created and granted"
 echo "=== ClickHouse initialization completed ==="

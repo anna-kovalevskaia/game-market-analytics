@@ -66,15 +66,14 @@ services:
     restart: always
 
   # ------------------------------------------------------------------
-  # ClickHouse — analytics DWH
-  # Stores raw, staging, core and marts layers
+  # ClickHouse — raw DWH
   # HTTP interface: localhost:8123
   # Native interface: localhost:9000
   # ------------------------------------------------------------------
   clickhouse:
     image: clickhouse/clickhouse-server:25.8.26
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-raw}
       CLICKHOUSE_ADMIN_USER: ${CLICKHOUSE_ADMIN_USER:-admin}
       CLICKHOUSE_ADMIN_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
       CLICKHOUSE_AIRFLOW_USER: ${CLICKHOUSE_AIRFLOW_USER:-airflow_user}
