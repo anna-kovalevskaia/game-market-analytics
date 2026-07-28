@@ -63,14 +63,14 @@ def _resolve_ch_type(annotation: Any) -> str | None:
         return _BASE_TYPE_MAP.get(annotation)
 
 
-def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[str]:
+def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[tuple[str, str]]:
     """Map every field of a Pydantic model to a (column_name, clickhouse_type) pair."""
-    columns: list[str] = []
+    columns: list[tuple[str, str]] = []
     for name, field in model.model_fields.items():
         ch_type = _resolve_ch_type(field.annotation)
         if ch_type is None:
             raise SchemaMappingError(f"unsupported field {name!r}: {field.annotation!r}")
-        columns.append(f"{name} {ch_type}")
+        columns.append((name, ch_type))
 
     logger.info("ClickHouse columns resolved for %s: %s", model.__name__, columns)
     return columns
