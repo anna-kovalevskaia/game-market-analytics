@@ -43,6 +43,7 @@ def steamspy_all_extract_to_tmp(
 
     return str(parent_path)
 
+
 # def steamspy_all_parquet_to_clickhouse(
 #     client: "ClickHouseClient", schema: str, table_name: str, dir_path: str, batch_size: int
 # ) -> None:
