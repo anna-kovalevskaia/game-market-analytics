@@ -36,14 +36,18 @@ class ClickHouseClient:
     def create_ddl_from_data_model(
         schema: str,  # ClickHouse schema/database name
         table_name: str,
-        columns: list[str],  # [(name, clickhouse_type), ...]
+        columns: list[tuple[str, str]],  # [(name, clickhouse_type), ...]
         order_by: str,
         engine: str = "MergeTree",
         partition_by: str = "toStartOfMonth(last_update)",
     ) -> str:
 
-        cols_sql = ",\n    ".join(columns)
-        cols_sql = "\n cityHash64(" + ",".join(columns) + ")"
+        cols_sql = ",\n    ".join([f"{name} {clickhouse_type}" for name, clickhouse_type in columns])
+        cols_sql += (
+            ",\n    row_hash UInt64 MATERIALIZED cityHash64("
+            + ",".join([name for name, _ in columns])
+            + ")"
+        )
         cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
 
         parts = [
