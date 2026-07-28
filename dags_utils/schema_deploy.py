@@ -2,7 +2,6 @@ import importlib
 import logging
 import types
 from datetime import datetime
-from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Union, get_args, get_origin
 
@@ -165,9 +164,6 @@ def deploy_models(
             engine=engine,
             partition_by=partition_by,
         )
-        parent_path = Path("clickhouse_ddl") / meta.schema / module_name
-        parent_path.mkdir(parents=True, exist_ok=True)
-        (parent_path / f"{module_name}_ddl.sql").write_text(ddl, encoding="utf-8")
 
         client.execute_sql(ddl)
         logger.info("Deployed table %r from model %r", module_name, model.__name__)

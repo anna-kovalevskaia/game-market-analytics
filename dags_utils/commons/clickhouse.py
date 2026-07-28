@@ -32,8 +32,8 @@ class ClickHouseClient:
         logger.info("ClickHouse execute: %s", sql[:200])
         self._client.command(sql)
 
+    @staticmethod
     def create_ddl_from_data_model(
-        self,
         schema: str,  # ClickHouse schema/database name
         table_name: str,
         columns: list[str],  # [(name, clickhouse_type), ...]
@@ -43,6 +43,7 @@ class ClickHouseClient:
     ) -> str:
 
         cols_sql = ",\n    ".join(columns)
+        cols_sql = "\n cityHash64(" + ",".join(columns) + ")"
         cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
 
         parts = [

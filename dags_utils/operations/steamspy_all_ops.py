@@ -42,3 +42,13 @@ def steamspy_all_extract_to_tmp(
         logger.info("SteamSpy written %s", page_num)
 
     return str(parent_path)
+
+
+# def steamspy_all_parquet_to_clickhouse(
+#     client: "ClickHouseClient", schema: str, table_name: str, dir_path: str, batch_size: int
+# ) -> None:
+#     """Insert SteamSpy data from Parquet files into ClickHouse."""
+#     parquet_files = sorted(Path(dir_path).glob("page_*.parquet"))
+#     for file_path in parquet_files:
+#         logger.info("Inserting %s into ClickHouse", file_path)
+#         client.insert_from_parquet_dir(schema, table_name, str(file_path), batch_size)
