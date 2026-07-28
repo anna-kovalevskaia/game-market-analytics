@@ -2,7 +2,6 @@ import importlib
 import logging
 import types
 from datetime import datetime
-from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Union, get_args, get_origin
 
