@@ -42,8 +42,8 @@ class ClickHouseClient:
         partition_by: str = "toStartOfMonth(last_update)",
     ) -> str:
 
-        cols_sql = (
-            ",\n    ".join([f"{name} {clickhouse_type}" for name, clickhouse_type in columns])
+        cols_sql = ",\n    ".join(
+            [f"{name} {clickhouse_type}" for name, clickhouse_type in columns]
         )
         cols_sql += (
             ",\n    row_hash UInt64 MATERIALIZED cityHash64("
