@@ -55,14 +55,10 @@ jobs:
       - name: dag parse
         working-directory: dags
         env:
-          # dags/ modules import `dags_utils` from the repo root — mirror the
-          # container's PYTHONPATH=/opt/airflow so the parse can resolve them.
           PYTHONPATH: ${{ github.workspace }}
-          # Cosmos validates + renders the dbt project at DAG import time.
-          # The container paths (/opt/airflow/...) don't exist on the runner,
-          # so point at the checkout instead.
           DBT_PROJECT_DIR: ${{ github.workspace }}/dbt
           DBT_EXECUTABLE_PATH: dbt
+          AIRFLOW__COSMOS__ENABLE_CACHE: 'False'
         run: |
           python -c "
           from airflow.models import DagBag
