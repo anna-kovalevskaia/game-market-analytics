@@ -20,12 +20,8 @@ dbt_dag = DbtDag(
         dbt_executable_path=DBT_BIN,
     ),
     render_config=RenderConfig(dbt_executable_path=DBT_BIN),
-    operator_args={
-        "vars": {
-            "run_date": "{{ dag_run.conf.get('run_date', ds) }}"
-        }
-    },
-    schedule="@daily",                        
+    operator_args={"vars": {"run_date": "{{ dag_run.conf.get('run_date', ds) }}"}},
+    schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     dag_id="cosmos_dbt_dag",
