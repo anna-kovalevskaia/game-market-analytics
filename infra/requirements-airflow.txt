@@ -8,3 +8,4 @@ pydantic>=2.11,<3
 
 tenacity>=8,<10
 python-dotenv>=1,<2
+pyarrow>=16,<22

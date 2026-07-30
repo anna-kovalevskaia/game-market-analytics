@@ -3,6 +3,7 @@ from pathlib import Path
 
 import clickhouse_connect
 import polars as pl
+import pyarrow as pa
 from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,11 @@ class ClickHouseClient:
     def execute_sql(self, sql: str) -> None:
         logger.info("ClickHouse execute: %s", sql[:200])
         self._client.command(sql)
+
+    def sql_to_arrow(self, sql: str) -> pa.Table:
+        """Converts a SQL query to an Arrow table."""
+        logger.info("ClickHouse execute: %s", sql[:200])
+        self.query_to_arrow(sql)
 
     @staticmethod
     def create_ddl_from_data_model(
@@ -66,7 +72,11 @@ class ClickHouseClient:
         clause = "IF EXISTS " if if_exists else ""
         self.execute_sql(f"DROP TABLE {clause} {schema}.{table_name} ")
 
-    def insert_from_parquet_dir(
+    def insert_polars_to_cl(self, schema: str, table_name: str, pl_df: pl.DataFrame) -> None:
+        """Insert polars DataFrame to ClickHouse table."""
+        self._client.insert(f"{schema}.{table_name}", pl_df.rows(), column_names=pl_df.columns)
+
+    def batch_insert_from_parquet(
         self, schema: str, table_name: str, dir_path: str, batch_size: int
     ) -> None:
         """Insert data from Parquet files in a directory into a ClickHouse table."""
@@ -86,7 +96,7 @@ class ClickHouseClient:
             chunk = files[i : i + batch_size]
             df = pl.concat([pl.read_parquet(f) for f in chunk])
             try:
-                self._client.insert(f"{schema}.{table_name}", df.rows(), column_names=df.columns)
+                self.insert_polars_to_cl(schema=schema, table=table_name, pl_df=df)
             except Exception as exc:
                 raise ClickHouseOperationError(
                     f"insert failed for batch {i}-{i + len(chunk)} into {schema}.{table_name!r}"
