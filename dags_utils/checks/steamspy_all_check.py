@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+
 from dags_utils.commons.clickhouse import ClickHouseClient
 
 log = logging.getLogger(__name__)
@@ -54,9 +55,7 @@ def steamspy_all_check_values(
 
     metrics_list = ", ".join(f"'{m}'" for m in metric_names)
 
-    prev_check = pl.from_arrow(
-        client.sql_to_arrow(
-            f"""
+    prev_check = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
                 SELECT max(checked_at)
                 FROM meta.steamspy_check
@@ -70,9 +69,7 @@ def steamspy_all_check_values(
             PREWHERE schema_name = '{schema}' AND table_name = '{table_name}'
             WHERE checked_at = last_check
               AND metrics_name IN ({metrics_list})
-            """
-        )
-    )
+            """))
 
     if prev_check.is_empty():
         return new_check
@@ -95,14 +92,17 @@ def steamspy_all_check_values(
         elif dev > warn_threshold:
             log.warning(
                 "%s.%s %s: отклонение %.1f%% (%s -> %s)",
-                schema, table_name, metrics_name,
-                dev * 100, old_val, new_val,
+                schema,
+                table_name,
+                metrics_name,
+                dev * 100,
+                old_val,
+                new_val,
             )
 
     if errors:
         raise CheckError(
-            f"{schema}.{table_name}: отклонение >{error_threshold:.0%}:\n"
-            + "\n".join(errors)
+            f"{schema}.{table_name}: отклонение >{error_threshold:.0%}:\n" + "\n".join(errors)
         )
 
     return new_check
