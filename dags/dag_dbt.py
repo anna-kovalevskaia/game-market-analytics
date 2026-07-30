@@ -1,8 +1,9 @@
+import os
 from pathlib import Path
-from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig
+
+from cosmos import DbtDag, ExecutionConfig, ProfileConfig, ProjectConfig, RenderConfig
 from cosmos.constants import ExecutionMode
 from pendulum import datetime
-import os
 
 DBT_DIR = Path(os.getenv("DBT_PROJECT_DIR", "/opt/airflow/dbt"))
 DBT_BIN = os.getenv("DBT_EXECUTABLE_PATH", "/opt/airflow/dbt_venv/bin/dbt")
