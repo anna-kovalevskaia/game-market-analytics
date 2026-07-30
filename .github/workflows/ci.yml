@@ -51,12 +51,14 @@ jobs:
         run: |
           pip install apache-airflow==3.0.0
           pip install -r infra/requirements-airflow.txt
+          pip install dbt-core==1.9.0 dbt-clickhouse==1.9.0
       - name: dag parse
         working-directory: dags
         env:
-          # dags/ modules import `dags_utils` from the repo root — mirror the
-          # container's PYTHONPATH=/opt/airflow so the parse can resolve them.
           PYTHONPATH: ${{ github.workspace }}
+          DBT_PROJECT_DIR: ${{ github.workspace }}/dbt
+          DBT_EXECUTABLE_PATH: dbt
+          AIRFLOW__COSMOS__ENABLE_CACHE: 'False'
         run: |
           python -c "
           from airflow.models import DagBag

@@ -1,0 +1,50 @@
+sources:
+  - name: steamspy
+    schema: raw
+    description: 'Сырой слой SteamSpy (наполняется Airflow)'
+    tables:
+      - name: steamspy_all
+        description: >
+          Снимки каталога SteamSpy (request=all).
+          ReplacingMergeTree по (appid, row_hash) — хранит версии игр.
+        columns:
+          - name: appid
+            description: 'Идентификатор приложения в Steam'
+            tests:
+              - not_null
+          - name: name
+            description: 'Название игры'
+          - name: developer
+            description: 'Разработчик'
+          - name: publisher
+            description: 'Издатель'
+          - name: score_rank
+            description: 'Ранг по оценке (у SteamSpy почти всегда пустой)'
+          - name: positive
+            description: 'Число положительных отзывов'
+          - name: negative
+            description: 'Число отрицательных отзывов'
+          - name: userscore
+            description: 'Пользовательский рейтинг (устарел, почти всегда 0)'
+          - name: owners
+            description: 'Оценка числа владельцев (строка-диапазон)'
+          - name: average_forever
+            description: 'Среднее время в игре за всё время, минуты'
+          - name: average_2weeks
+            description: 'Среднее время в игре за последние 2 недели, минуты'
+          - name: median_forever
+            description: 'Медианное время в игре за всё время, минуты'
+          - name: median_2weeks
+            description: 'Медианное время в игре за последние 2 недели, минуты'
+          - name: price
+            description: 'Текущая цена, центы'
+          - name: initialprice
+            description: 'Начальная цена, центы'
+          - name: discount
+            description: 'Скидка, %'
+          - name: ccu
+            description: 'Пиковое число одновременных игроков за вчера'
+          - name: row_hash
+            description: 'Хэш строки (все поля кроме last_update) — для детекции изменений'
+          - name: last_update
+            description: 'Время загрузки снимка'

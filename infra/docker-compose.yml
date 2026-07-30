@@ -27,6 +27,7 @@ x-airflow-common:
     CLICKHOUSE_PASSWORD: ${CLICKHOUSE_AIRFLOW_PASSWORD:-}
     CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
     PYTHONPATH: '/opt/airflow:${PYTHONPATH:-}'
+    DBT_PROJECT_DIR: /opt/airflow/dbt
   volumes:
     # DAGs and dbt project
     - ${AIRFLOW_PROJ_DIR:-.}/../dags:/opt/airflow/dags
