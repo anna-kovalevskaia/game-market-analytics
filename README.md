@@ -43,17 +43,6 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | IGDB API | Structured genre classification, critic ratings | Steam tags are unstructured; IGDB provides clean taxonomy |
 | Twitch API | Viewing hours, stream engagement | Measures media weight of game titles |
 
-### Phase 2 - Planned
-
-| Source | What it provides |
-|---|---|
-| SteamDB (scraping) | Historical price changes and discount campaigns |
-| Epic Games Store API | Free giveaway history and its impact on Steam metrics |
-| RAWG.io API | Cross-platform data (console market) |
-| Itch.io API / RSS | Indie ecosystem and early-stage micro-trend detection |
-| Reddit & YouTube API | Community sentiment and discussion activity |
-| Google Trends API | Global search interest dynamics |
-
 
 ## Tech Stack
 
@@ -105,10 +94,8 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 - Google Sheets as cloud buffer
 - Tableau Public with automatic daily refresh
 
-**Phase 2 - Data Expansion**
-- Additional sources: SteamDB, Epic Games Store, RAWG, Itch.io, Reddit, YouTube, Google Trends
+**Phase 2 - Analytical Depth**
 - Extended dbt layer: cohort analysis, genre lifecycle metrics
-- Crunchbase + SEC EDGAR for studio-level enrichment
 
 **Phase 3 - Cloud Migration**
 - Trigger: public assistant requires cloud infrastructure
