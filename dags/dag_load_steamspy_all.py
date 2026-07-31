@@ -56,7 +56,7 @@ def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
 
 @dag(
     dag_id="steamspy_all_raw_data",
-    schedule="30 3 * * *",
+    schedule="30 0 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
