@@ -36,7 +36,7 @@ class ClickHouseClient:
     def sql_to_arrow(self, sql: str) -> pa.Table:
         """Converts a SQL query to an Arrow table."""
         logger.info("ClickHouse execute: %s", sql[:200])
-        self.query_to_arrow(sql)
+        self._client.query_arrow(sql)
 
     @staticmethod
     def create_ddl_from_data_model(
@@ -51,12 +51,12 @@ class ClickHouseClient:
         cols_sql = ",\n    ".join(
             [f"{name} {clickhouse_type}" for name, clickhouse_type in columns]
         )
+
+        hash_args = ", ".join(f"ifNull(toString({name}), '\\\\N')" for name, _ in columns)
+        cols_sql += f",\n    row_hash UInt64 MATERIALIZED cityHash64({hash_args})"
         cols_sql += (
-            ",\n    row_hash UInt64 MATERIALIZED cityHash64("
-            + ",".join([name for name, _ in columns])
-            + ")"
+            ",\n    last_update DateTime64(3, 'UTC') MATERIALIZED toDateTime(now64(6),'UTC')"
         )
-        cols_sql += ",\n    last_update DateTime64(6) DEFAULT now64(6)"
 
         parts = [
             f"CREATE TABLE IF NOT EXISTS {schema}.{table_name} (\n    {cols_sql}\n)",
@@ -72,12 +72,12 @@ class ClickHouseClient:
         clause = "IF EXISTS " if if_exists else ""
         self.execute_sql(f"DROP TABLE {clause} {schema}.{table_name} ")
 
-    def insert_polars_to_cl(self, schema: str, table_name: str, pl_df: pl.DataFrame) -> None:
+    def insert_polars_to_ch(self, schema: str, table_name: str, pl_df: pl.DataFrame) -> None:
         """Insert polars DataFrame to ClickHouse table."""
         self._client.insert(f"{schema}.{table_name}", pl_df.rows(), column_names=pl_df.columns)
 
-    def batch_insert_from_parquet(
-        self, schema: str, table_name: str, dir_path: str, batch_size: int
+    def insert_parquet_to_ch_batch(
+        self, schema: str, table_name: str, dir_path: str | Path, batch_size: int
     ) -> None:
         """Insert data from Parquet files in a directory into a ClickHouse table."""
         if batch_size < 1:
@@ -94,9 +94,12 @@ class ClickHouseClient:
 
         for i in range(0, len(files), batch_size):
             chunk = files[i : i + batch_size]
-            df = pl.concat([pl.read_parquet(f) for f in chunk])
+            # "vertical_relaxed" resolves a common supertype instead of demanding
+            # identical schemas, so a file written before a model change (e.g. an
+            # all-null column typed as Null) still concatenates.
+            df = pl.concat([pl.read_parquet(f) for f in chunk], how="vertical_relaxed")
             try:
-                self.insert_polars_to_cl(schema=schema, table=table_name, pl_df=df)
+                self.insert_polars_to_ch(schema=schema, table_name=table_name, pl_df=df)
             except Exception as exc:
                 raise ClickHouseOperationError(
                     f"insert failed for batch {i}-{i + len(chunk)} into {schema}.{table_name!r}"

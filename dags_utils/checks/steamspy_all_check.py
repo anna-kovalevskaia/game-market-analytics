@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import polars as pl
 
@@ -15,11 +14,13 @@ class CheckError(Exception):
 
 
 def steamspy_all_check_values(
-    result: dict[str, Any],
+    path: Path,
     client: ClickHouseClient,
     schema: str,
     table_name: str,
-    cur_datetime: datetime,
+    meta_schema: str,
+    meta_table_name: str,
+    cur_date: datetime,
     warn_threshold: float = 0.20,
     error_threshold: float = 0.50,
 ) -> pl.DataFrame:
@@ -35,7 +36,7 @@ def steamspy_all_check_values(
     metric_names = ["row_count", *median_cols]
 
     new_check = (
-        pl.scan_parquet(Path(result["path"]) / "*.parquet")
+        pl.scan_parquet(path / "*.parquet")
         .select(
             pl.len().cast(pl.Float64).alias("row_count"),
             pl.col(median_cols).median(),
@@ -49,23 +50,25 @@ def steamspy_all_check_values(
             .then(pl.lit("count"))
             .otherwise(pl.lit("median"))
             .alias("agg_type"),
-            pl.lit(cur_datetime).alias("checked_at"),
+            pl.lit(cur_date).alias("checked_at"),
         )
     )
 
     metrics_list = ", ".join(f"'{m}'" for m in metric_names)
 
+    meta_table = f"{meta_schema}.{meta_table_name}"
+
     prev_check = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
                 SELECT max(checked_at)
-                FROM meta.steamspy_check
+                FROM {meta_table}
                 WHERE schema_name = '{schema}'
                   AND table_name  = '{table_name}'
-                  AND checked_at <= toDateTime64('{cur_datetime}', 3, 'UTC')
+                  AND checked_at <= toDateTime64('{cur_date}', 3, 'UTC')
             ) AS last_check
 
             SELECT metrics_name, metrics_value
-            FROM meta.steamspy_check
+            FROM {meta_table}
             PREWHERE schema_name = '{schema}' AND table_name = '{table_name}'
             WHERE checked_at = last_check
               AND metrics_name IN ({metrics_list})
