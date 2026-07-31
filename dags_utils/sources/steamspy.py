@@ -34,15 +34,23 @@ class SteamSpyClient:
         try:
             response = self._session.get(self._base_url, params=params, timeout=self._timeout)
             response.raise_for_status()
+            return response.json()
         except requests.RequestException as exc:
             raise SteamSpyConnectionError(f"SteamSpy request failed: params={params}") from exc
-        return response.json()
 
     def steamspy_get_all(self, page: int) -> dict[str, Any]:
         """Одна страница SteamSpy ?request=all&page=N. Возвращает {appid_str: {info}}."""
         if page < 0:
             raise SteamSpyParameterError(f"page must be >= 0, got {page}")
-        return self._get({"request": "all", "page": page})
+
+        try:
+            return self._get({"request": "all", "page": page})
+        except SteamSpyConnectionError:
+
+            if page == 0:
+                raise
+            logger.warning("SteamSpy page=%s failed — treating as end of catalog", page)
+            return {}
 
     def steamspy_iter_all(
         self,

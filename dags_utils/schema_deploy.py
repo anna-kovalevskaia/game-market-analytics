@@ -1,79 +1,18 @@
 import importlib
 import logging
 import types
-from datetime import datetime
-from types import MappingProxyType
-from typing import Any, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
 from dags_utils.commons.clickhouse import ClickHouseClient
+from dags_utils.commons.model_types import model_to_clickhouse_columns
 from dags_utils.sources.github import GitHubClient
 
 logger = logging.getLogger(__name__)
 
 
-class SchemaMappingError(Exception):
-    """Raised when a Pydantic field cannot be mapped to a ClickHouse type."""
-
-
 class SchemaDeployError(Exception):
     """Raised when model discovery or deployment fails."""
-
-
-_BASE_TYPE_MAP: MappingProxyType[Any, str] = MappingProxyType(
-    {
-        int: "Int64",
-        float: "Float64",
-        str: "String",
-        bool: "UInt8",
-        datetime: "DateTime64(6)",
-        list[str]: "Array(String)",
-        list[int]: "Array(Int64)",
-        list[float]: "Array(Float64)",
-    }
-)
-
-_ARRAY_TYPES = frozenset({list[str], list[int], list[float]})
-
-
-def _resolve_ch_type(annotation: Any) -> str | None:
-
-    origin = get_origin(annotation)
-
-    if origin is Union or origin is types.UnionType:
-        args = get_args(annotation)
-
-        if len(args) > 2:
-            raise SchemaMappingError("You cannot set up more then 2 types for Union/Optional.")
-        if not any(a is type(None) for a in args):
-            raise SchemaMappingError("One of the types must be None.")
-
-        inner_annotation = next(arg for arg in args if arg is not type(None))
-
-        if inner_annotation in _ARRAY_TYPES:
-            return _BASE_TYPE_MAP.get(inner_annotation)
-
-        base_type = _BASE_TYPE_MAP.get(inner_annotation)
-        if base_type is None:
-            raise SchemaMappingError(f"unsupported inner type in Optional: {inner_annotation!r}")
-
-        return f"Nullable({base_type})"
-    elif origin in (None, list):
-        return _BASE_TYPE_MAP.get(annotation)
-
-
-def _model_to_clickhouse_columns(model: type[BaseModel]) -> list[tuple[str, str]]:
-    """Map every field of a Pydantic model to a (column_name, clickhouse_type) pair."""
-    columns: list[tuple[str, str]] = []
-    for name, field in model.model_fields.items():
-        ch_type = _resolve_ch_type(field.annotation)
-        if ch_type is None:
-            raise SchemaMappingError(f"unsupported field {name!r}: {field.annotation!r}")
-        columns.append((name, ch_type))
-
-    logger.info("ClickHouse columns resolved for %s: %s", model.__name__, columns)
-    return columns
 
 
 def _get_module_meta(module: types.ModuleType) -> type:
@@ -152,7 +91,7 @@ def deploy_models(
 ) -> None:
 
     for module_name, (model, meta) in models.items():
-        columns = _model_to_clickhouse_columns(model)
+        columns = model_to_clickhouse_columns(model)
         order_by = ", ".join(meta.order_by)
         partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
         engine = getattr(meta, "engine", "MergeTree")
