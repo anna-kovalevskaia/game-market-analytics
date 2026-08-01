@@ -35,7 +35,7 @@ CH_ARGS=(
 # Warehouse layers — each is a separate ClickHouse database (ClickHouse has no
 # schemas-within-a-database). Keep CLICKHOUSE_DB (dbt/airflow default) inside
 # this list; edit here to add/remove layers.
-CH_DATABASES=(meta raw staging core marts)
+CH_DATABASES=(meta raw raw_dq staging dbt_dq core marts)
 
 AIRFLOW_USER="${CLICKHOUSE_AIRFLOW_USER:-airflow_user}"
 

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS meta.steamspy_check (
+CREATE TABLE IF NOT EXISTS raw_dq.steamspy_check (
     schema_name String,
     table_name String,
     metrics_name String,

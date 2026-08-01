@@ -55,7 +55,7 @@ class ClickHouseClient:
         hash_args = ", ".join(f"ifNull(toString({name}), '\\\\N')" for name, _ in columns)
         cols_sql += f",\n    row_hash UInt64 MATERIALIZED cityHash64({hash_args})"
         cols_sql += (
-            ",\n    last_update DateTime64(3, 'UTC') MATERIALIZED toDateTime(now64(6),'UTC')"
+            ",\n    last_update DateTime64(3, 'UTC') Default toDateTime(now64(6),'UTC')"
         )
 
         parts = [

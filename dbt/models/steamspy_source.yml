@@ -1,6 +1,5 @@
 sources:
-  - name: steamspy
-    schema: raw
+  - name: raw
     description: 'Сырой слой SteamSpy (наполняется Airflow)'
     tables:
       - name: steamspy_all
@@ -28,14 +27,6 @@ sources:
             description: 'Пользовательский рейтинг (устарел, почти всегда 0)'
           - name: owners
             description: 'Оценка числа владельцев (строка-диапазон)'
-          - name: average_forever
-            description: 'Среднее время в игре за всё время, минуты'
-          - name: average_2weeks
-            description: 'Среднее время в игре за последние 2 недели, минуты'
-          - name: median_forever
-            description: 'Медианное время в игре за всё время, минуты'
-          - name: median_2weeks
-            description: 'Медианное время в игре за последние 2 недели, минуты'
           - name: price
             description: 'Текущая цена, центы'
           - name: initialprice
