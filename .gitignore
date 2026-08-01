@@ -11,3 +11,4 @@ dbt/logs/
 dags_utils/note.md
 tmp/
 .vscode/
+logs/

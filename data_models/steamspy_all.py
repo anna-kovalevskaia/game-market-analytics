@@ -14,10 +14,6 @@ class SteamSpyAllModel(BaseModel):
     negative: int | None = Field(default=None, ge=0)
     userscore: int | None = Field(default=None)
     owners: str | None = Field(default=None)
-    average_forever: float | None = Field(default=None, ge=0)
-    average_2weeks: float | None = Field(default=None, ge=0)
-    median_forever: float | None = Field(default=None, ge=0)
-    median_2weeks: float | None = Field(default=None, ge=0)
     price: float | None = Field(default=None, ge=0)
     initialprice: float | None = Field(default=None, ge=0)
     discount: float | None = Field(default=None, ge=0)
@@ -28,10 +24,6 @@ class SteamSpyAllModel(BaseModel):
         "positive",
         "negative",
         "userscore",
-        "average_forever",
-        "average_2weeks",
-        "median_forever",
-        "median_2weeks",
         "price",
         "initialprice",
         "discount",

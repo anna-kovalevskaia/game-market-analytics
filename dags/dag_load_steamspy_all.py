@@ -42,7 +42,7 @@ def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
     db_arguments = {
         "schema_name": "raw",
         "table_name": "steamspy_all",
-        "meta_schema_name": "meta",
+        "meta_schema_name": "raw_dq",
         "meta_check_tb_name": "steamspy_check",
         "cur_date": fixed_datetime,
         "warn_threshold": 0.20,

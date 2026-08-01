@@ -26,10 +26,6 @@ def steamspy_all_check_values(
 ) -> pl.DataFrame:
     median_cols: list[str] = [
         "price",
-        "average_2weeks",
-        "median_2weeks",
-        "median_forever",
-        "average_forever",
         "positive",
         "negative",
     ]
@@ -60,7 +56,7 @@ def steamspy_all_check_values(
 
     prev_check = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
-                SELECT max(checked_at)
+                SELECT toDate(max(checked_at))
                 FROM {meta_table}
                 WHERE schema_name = '{schema}'
                   AND table_name  = '{table_name}'
@@ -70,7 +66,7 @@ def steamspy_all_check_values(
             SELECT metrics_name, metrics_value
             FROM {meta_table}
             PREWHERE schema_name = '{schema}' AND table_name = '{table_name}'
-            WHERE checked_at = last_check
+            WHERE toDate(checked_at) = last_check
               AND metrics_name IN ({metrics_list})
             """))
 

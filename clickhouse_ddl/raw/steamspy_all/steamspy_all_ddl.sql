@@ -8,15 +8,11 @@ CREATE TABLE IF NOT EXISTS raw.steamspy_all (
     negative Nullable(Int64),
     userscore Nullable(Int64),
     owners Nullable(String),
-    average_forever Nullable(Float64),
-    average_2weeks Nullable(Float64),
-    median_forever Nullable(Float64),
-    median_2weeks Nullable(Float64),
     price Nullable(Float64),
     initialprice Nullable(Float64),
     discount Nullable(Float64),
     ccu Nullable(Int64),
-    row_hash UInt64 MATERIALIZED cityHash64(ifNull(toString(appid), '\\N'), ifNull(toString(name), '\\N'), ifNull(toString(developer), '\\N'), ifNull(toString(publisher), '\\N'), ifNull(toString(score_rank), '\\N'), ifNull(toString(positive), '\\N'), ifNull(toString(negative), '\\N'), ifNull(toString(userscore), '\\N'), ifNull(toString(owners), '\\N'), ifNull(toString(average_forever), '\\N'), ifNull(toString(average_2weeks), '\\N'), ifNull(toString(median_forever), '\\N'), ifNull(toString(median_2weeks), '\\N'), ifNull(toString(price), '\\N'), ifNull(toString(initialprice), '\\N'), ifNull(toString(discount), '\\N'), ifNull(toString(ccu), '\\N')),
+    row_hash UInt64 MATERIALIZED cityHash64(ifNull(toString(appid), '\\N'), ifNull(toString(name), '\\N'), ifNull(toString(developer), '\\N'), ifNull(toString(publisher), '\\N'), ifNull(toString(score_rank), '\\N'), ifNull(toString(positive), '\\N'), ifNull(toString(negative), '\\N'), ifNull(toString(userscore), '\\N'), ifNull(toString(owners), '\\N'), ifNull(toString(price), '\\N'), ifNull(toString(initialprice), '\\N'), ifNull(toString(discount), '\\N'), ifNull(toString(ccu), '\\N')),
     last_update DateTime64(3, 'UTC') MATERIALIZED toDateTime(now64(6),'UTC')
 )
 ENGINE = ReplacingMergeTree(last_update)
