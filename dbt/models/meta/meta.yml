@@ -1,0 +1,24 @@
+models:
+  - name: appid_state
+    description: >
+      State of every game as of its latest observation: a pair of row hashes
+      (HashDiff) and the interval bounds. Drives the selection of appids that need
+      an appdetails refetch.
+    columns:
+      - name: appid
+        description: 'Steam application identifier, the table key.'
+        tests:
+          - not_null
+          - unique
+      - name: row_hash_old
+        description: 'Row hash from the previous observation.'
+        tests:
+          - not_null
+      - name: row_hash_new
+        description: 'Row hash from the run_date snapshot.'
+      - name: valid_from
+        description: 'Timestamp of the previous observation.'
+      - name: valid_to
+        description: 'Timestamp of the current observation.'
+      - name: is_changed
+        description: 'Flag marking that the hashes differ between observations.'

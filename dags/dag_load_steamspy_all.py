@@ -4,12 +4,14 @@ from pathlib import Path
 from airflow.sdk import Variable, dag, get_current_context, task
 from pendulum import datetime, parse
 
+from dags_utils.commons.assets import table_asset
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.operations.steamspy_all_ops import (
     steamspy_all_extract_to_tmp,
     steamspy_all_parquet_to_clickhouse,
 )
 from dags_utils.sources.steamspy import SteamSpyClient
+from data_models.steamspy_all import Meta as SteamSpyAllMeta
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ def steamspy_all_extract() -> str:
     return str(run_id_path)
 
 
-@task
+@task(outlets=[table_asset(SteamSpyAllMeta)])
 def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
 
     fixed_run_id_path = Path(run_id_path)

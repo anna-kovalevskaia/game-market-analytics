@@ -55,6 +55,7 @@ class ClickHouseClient:
         hash_args = ", ".join(f"ifNull(toString({name}), '\\\\N')" for name, _ in columns)
         cols_sql += f",\n    row_hash UInt64 MATERIALIZED cityHash64({hash_args})"
         cols_sql += ",\n    last_update DateTime64(3, 'UTC') Default toDateTime(now64(6),'UTC')"
+        cols_sql += ",\n    ver Int64 MATERIALIZED -toUnixTimestamp64Milli(last_update)"
 
         parts = [
             f"CREATE TABLE IF NOT EXISTS {schema}.{table_name} (\n    {cols_sql}\n)",

@@ -129,6 +129,7 @@ snapshots:
 tests:
   game_market_analytics:
     +store_failures: true      # Persist failing rows for triage
+    +schema: dbt_dq      # -> analytics.test_results
     +severity: warn            # Default: warn (override per test to "error")
 
 ###############################################################################

@@ -1,3 +1,5 @@
+# This file must contain the words "dag" and "airflow": with safe mode on (the
+# default), DagBag skips files lacking either one — silently, without an import error.
 import os
 from pathlib import Path
 
@@ -5,8 +7,11 @@ from cosmos import DbtDag, ExecutionConfig, ProfileConfig, ProjectConfig, Render
 from cosmos.constants import ExecutionMode
 from pendulum import datetime
 
-DBT_DIR = Path(os.getenv("DBT_PROJECT_DIR", "/opt/airflow/dbt"))
-DBT_BIN = os.getenv("DBT_EXECUTABLE_PATH", "/opt/airflow/dbt_venv/bin/dbt")
+from dags_utils.commons.assets import table_asset
+from data_models.steamspy_all import Meta as SteamSpyAllMeta
+
+DBT_DIR = Path(__file__).resolve().parents[1] / "dbt"  # dbt/ sits next to dags/ in both envs
+DBT_BIN = os.getenv("DBT_EXECUTABLE_PATH")  # image: dbt_venv/bin/dbt, CI: dbt from PATH
 
 dbt_dag = DbtDag(
     project_config=ProjectConfig(DBT_DIR),
@@ -20,8 +25,14 @@ dbt_dag = DbtDag(
         dbt_executable_path=DBT_BIN,
     ),
     render_config=RenderConfig(dbt_executable_path=DBT_BIN),
-    operator_args={"vars": {"run_date": "{{ dag_run.conf.get('run_date', ds) }}"}},
-    schedule="@daily",
+    operator_args={
+        "vars": {
+            "run_date": (
+                "{{ dag_run.conf.get('run_date')" " or dag_run.run_after.strftime('%Y-%m-%d') }}"
+            )
+        }
+    },
+    schedule=[table_asset(SteamSpyAllMeta)],
     start_date=datetime(2026, 1, 1),
     catchup=False,
     dag_id="cosmos_dbt_dag",

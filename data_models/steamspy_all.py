@@ -36,6 +36,6 @@ class SteamSpyAllModel(BaseModel):
 
 class Meta:
     order_by = ("appid", "row_hash")
-    partition_by = "toStartOfMonth(last_update)"
+    partition_by = "toStartOfMonth(ver)"
     engine = "ReplacingMergeTree(last_update)"
     schema: str = "raw"

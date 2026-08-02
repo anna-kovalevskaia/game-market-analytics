@@ -3,10 +3,10 @@ game_market_analytics:
   outputs:
     local:
       type: clickhouse
-      host: "{{ env_var('CLICKHOUSE_HOST', 'localhost') }}"
+      host: "{{ env_var('CLICKHOUSE_HOST', '127.0.0.1') }}"
       port: "{{ env_var('CLICKHOUSE_PORT', '8123') | int }}"
-      user: "{{ env_var('CLICKHOUSE_USER', 'default') }}"
-      password: "{{ env_var('CLICKHOUSE_PASSWORD', '') }}"
+      user: "{{ env_var('CLICKHOUSE_USER', env_var('CLICKHOUSE_AIRFLOW_USER', 'default')) }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD', env_var('CLICKHOUSE_AIRFLOW_PASSWORD', '')) }}"
       secure: "{{ env_var('CLICKHOUSE_SECURE', 'false') == 'true' }}"
       schema: "{{ env_var('CLICKHOUSE_DB', 'raw') }}"
       threads: 4
@@ -16,10 +16,10 @@ game_market_analytics:
 
     ci:
       type: clickhouse
-      host: "{{ env_var('CLICKHOUSE_HOST', 'localhost') }}"
+      host: "{{ env_var('CLICKHOUSE_HOST', '127.0.0.1') }}"
       port: "{{ env_var('CLICKHOUSE_PORT', '8123') | int }}"
-      user: "{{ env_var('CLICKHOUSE_USER', 'default') }}"
-      password: "{{ env_var('CLICKHOUSE_PASSWORD', '') }}"
+      user: "{{ env_var('CLICKHOUSE_USER', env_var('CLICKHOUSE_AIRFLOW_USER', 'default')) }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD', env_var('CLICKHOUSE_AIRFLOW_PASSWORD', '')) }}"
       secure: false
       schema: "{{ env_var('CLICKHOUSE_DB', 'raw') }}"
       threads: 2

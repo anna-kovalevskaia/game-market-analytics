@@ -1,32 +1,31 @@
-
 models:
   - name: stg_steamspy_all
     description: >
-      Дедуплицированные версии снимков SteamSpy: одна строка на уникальное
-      сочетание (appid, row_hash). Повторные наблюдения одного и того же
-      состояния игры схлопываются, изменившиеся остаются отдельными версиями.
+      Deduplicated SteamSpy snapshot versions: one row per unique
+      (appid, row_hash) pair, so repeated observations of the same state collapse
+      while changed ones remain as separate versions.
     columns:
       - name: appid
-        description: 'Идентификатор приложения в Steam'
+        description: 'Steam application identifier.'
       - name: name
-        description: 'Название игры'
+        description: 'Game title.'
       - name: developer
-        description: 'Разработчик'
+        description: 'Developer studio.'
       - name: publisher
-        description: 'Издатель'
+        description: 'Publisher.'
       - name: score_rank
-        description: 'Ранг по оценке (у SteamSpy почти всегда пустой)'
+        description: 'Score rank, almost always empty in SteamSpy.'
       - name: positive
-        description: 'Число положительных отзывов'
+        description: 'Number of positive reviews.'
       - name: negative
-        description: 'Число отрицательных отзывов'
+        description: 'Number of negative reviews.'
       - name: userscore
-        description: 'Пользовательский рейтинг (устарел, почти всегда 0)'
+        description: 'Legacy user score, almost always 0.'
       - name: owners
-        description: 'Оценка числа владельцев (строка-диапазон)'
+        description: 'Estimated owners as a range string.'
       - name: price
-        description: 'Текущая цена, центы'
+        description: 'Current price in cents.'
       - name: initialprice
-        description: 'Начальная цена, центы'
+        description: 'Original price in cents.'
       - name: discount
-        description: 'Скидка, %'
+        description: 'Discount, percent.'
