@@ -17,6 +17,10 @@ SELECT
     owners,
     price,
     initialprice,
-    discount
+    discount,
+    ccu,
+    row_hash,
+    last_update
 FROM {{ source('raw', 'steamspy_all') }}
+ORDER BY appid, row_hash, ver DESC
 LIMIT 1 by appid, row_hash
