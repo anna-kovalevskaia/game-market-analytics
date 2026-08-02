@@ -25,7 +25,6 @@ dbt_dag = DbtDag(
         dbt_executable_path=DBT_BIN,
     ),
     render_config=RenderConfig(dbt_executable_path=DBT_BIN),
-
     operator_args={
         "vars": {
             "run_date": (
