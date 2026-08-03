@@ -55,7 +55,7 @@ def steamspy_all_parquet_to_clickhouse(
     batch_size: int,
     meta: type,
     cur_date: datetime,
-    check: Check = Check(),
+    check: Check,
 ) -> None:
     """Validate the staged values, insert them in batches, record the DQ metrics."""
 
@@ -75,9 +75,7 @@ def steamspy_all_parquet_to_clickhouse(
 
     client.insert_parquet_to_ch_batch(meta.schema, meta.table_name, run_id_path, batch_size)
 
-    client.insert_polars_to_ch(
-        check.meta_schema_name, check.meta_check_tb_name, new_values_check
-    )
+    client.insert_polars_to_ch(check.meta_schema_name, check.meta_check_tb_name, new_values_check)
 
     shutil.rmtree(run_id_path, ignore_errors=True)
     logger.info("SteamSpy tmp cleaned up: %s", run_id_path)
