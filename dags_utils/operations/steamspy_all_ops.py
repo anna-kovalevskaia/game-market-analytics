@@ -6,7 +6,7 @@ from pathlib import Path
 import polars as pl
 from pydantic import BaseModel
 
-from dags_utils.checks.steamspy_all_check import steamspy_all_check_values
+from dags_utils.checks.steamspy_all_check import Check, steamspy_all_check_values
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.commons.model_types import model_to_polars_schema
 from dags_utils.sources.steamspy import SteamSpyClient
@@ -19,16 +19,6 @@ class IterArguments(BaseModel):
     max_pages: int
     stop_after_empty_pages: int
     delay_seconds: float
-
-
-class CheckIterArguments(BaseModel):
-    schema_name: str
-    table_name: str
-    meta_schema_name: str
-    meta_check_tb_name: str
-    cur_date: datetime
-    warn_threshold: float
-    error_threshold: float
 
 
 def _steamspy_write_to_tmp(data: list[SteamSpyAllModel], full_file_path: Path) -> None:
@@ -60,34 +50,33 @@ def steamspy_all_extract_to_tmp(client: SteamSpyClient, run_id_path: Path, **kwa
 
 
 def steamspy_all_parquet_to_clickhouse(
-    client: ClickHouseClient, run_id_path: Path, batch_size: int, **kwargs
+    client: ClickHouseClient,
+    run_id_path: Path,
+    batch_size: int,
+    meta: type,
+    cur_date: datetime,
+    check: Check = Check(),
 ) -> None:
-    """Validate SteamSpy values"""
-    """Insert data to clickhouse by batches"""
-    """Update meta.steamspy_check"""
-
-    f_arguments = CheckIterArguments(**kwargs)
+    """Validate the staged values, insert them in batches, record the DQ metrics."""
 
     logger.info("SteamSpy all started to check values in %s", run_id_path)
 
     new_values_check = steamspy_all_check_values(
         run_id_path,
         client,
-        f_arguments.schema_name,
-        f_arguments.table_name,
-        f_arguments.meta_schema_name,
-        f_arguments.meta_check_tb_name,
-        f_arguments.cur_date,
-        f_arguments.warn_threshold,
-        f_arguments.error_threshold,
+        meta.schema,
+        meta.table_name,
+        check.meta_schema_name,
+        check.meta_check_tb_name,
+        cur_date,
+        check.warn_threshold,
+        check.error_threshold,
     )
 
-    client.insert_parquet_to_ch_batch(
-        f_arguments.schema_name, f_arguments.table_name, run_id_path, batch_size
-    )
+    client.insert_parquet_to_ch_batch(meta.schema, meta.table_name, run_id_path, batch_size)
 
     client.insert_polars_to_ch(
-        f_arguments.meta_schema_name, f_arguments.meta_check_tb_name, new_values_check
+        check.meta_schema_name, check.meta_check_tb_name, new_values_check
     )
 
     shutil.rmtree(run_id_path, ignore_errors=True)

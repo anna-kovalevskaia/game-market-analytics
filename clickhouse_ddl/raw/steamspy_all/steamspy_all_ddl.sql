@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS raw.steamspy_all (
     last_update DateTime64(3, 'UTC') Default toDateTime(now64(6),'UTC'),
     ver Int64 MATERIALIZED -toUnixTimestamp64Milli(last_update)
 )
-ENGINE = ReplacingMergeTree(last_update)
-PARTITION BY toStartOfMonth(ver)
+ENGINE = ReplacingMergeTree(ver)
+PARTITION BY toStartOfMonth(last_update)
 ORDER BY (appid, row_hash)

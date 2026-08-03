@@ -21,6 +21,10 @@ def _get_module_meta(module: types.ModuleType) -> type:
         raise SchemaDeployError(f"module {module.__name__!r} must define a local Meta class")
     if not getattr(meta, "order_by", None):
         raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty order_by")
+    if not getattr(meta, "table_name", None):
+        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty table_name")
+    if not getattr(meta, "schema", None):
+        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty schema")
     return meta
 
 
@@ -97,7 +101,7 @@ def deploy_models(
         engine = getattr(meta, "engine", "MergeTree")
         ddl = client.create_ddl_from_data_model(
             schema=meta.schema,
-            table_name=module_name,
+            table_name=meta.table_name,
             columns=columns,
             order_by=order_by,
             engine=engine,
@@ -105,4 +109,10 @@ def deploy_models(
         )
 
         client.execute_sql(ddl)
-        logger.info("Deployed table %r from model %r", module_name, model.__name__)
+        logger.info(
+            "Deployed table %s.%s from model %r (data_models/%s.py)",
+            meta.schema,
+            meta.table_name,
+            model.__name__,
+            module_name,
+        )

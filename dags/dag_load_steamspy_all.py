@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime as py_datetime  # pendulum.datetime below shadows the stdlib name
 from pathlib import Path
 
 from airflow.sdk import Variable, dag, get_current_context, task
@@ -38,21 +39,16 @@ def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
 
     ctx = get_current_context()
     run_datetime = parse(ctx["dag_run"].conf.get("run_date") or ctx["ts"]).in_timezone("UTC")
-    fixed_datetime = run_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    cur_date = run_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
     ch_client = ClickHouseClient()
 
-    db_arguments = {
-        "schema_name": "raw",
-        "table_name": "steamspy_all",
-        "meta_schema_name": "raw_dq",
-        "meta_check_tb_name": "steamspy_check",
-        "cur_date": fixed_datetime,
-        "warn_threshold": 0.20,
-        "error_threshold": 0.50,
-    }
-
     steamspy_all_parquet_to_clickhouse(
-        client=ch_client, run_id_path=fixed_run_id_path, batch_size=100, **db_arguments
+        client=ch_client,
+        run_id_path=fixed_run_id_path,
+        batch_size=100,
+        meta=SteamSpyAllMeta,
+        cur_date=cur_date,
     )
 
 

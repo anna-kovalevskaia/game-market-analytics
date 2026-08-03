@@ -4,6 +4,7 @@ from pathlib import Path
 import clickhouse_connect
 import polars as pl
 import pyarrow as pa
+import pyarrow.parquet as pq
 from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class ClickHouseClient:
     def sql_to_arrow(self, sql: str) -> pa.Table:
         """Converts a SQL query to an Arrow table."""
         logger.info("ClickHouse execute: %s", sql[:200])
-        self._client.query_arrow(sql)
+        return self._client.query_arrow(sql)
 
     @staticmethod
     def create_ddl_from_data_model(
@@ -93,12 +94,10 @@ class ClickHouseClient:
 
         for i in range(0, len(files), batch_size):
             chunk = files[i : i + batch_size]
-            # "vertical_relaxed" resolves a common supertype instead of demanding
-            # identical schemas, so a file written before a model change (e.g. an
-            # all-null column typed as Null) still concatenates.
-            df = pl.concat([pl.read_parquet(f) for f in chunk], how="vertical_relaxed")
+
+            table = pa.concat_tables([pq.read_table(f) for f in chunk])
             try:
-                self.insert_polars_to_ch(schema=schema, table_name=table_name, pl_df=df)
+                self._client.insert_arrow(f"{schema}.{table_name}", table)
             except Exception as exc:
                 raise ClickHouseOperationError(
                     f"insert failed for batch {i}-{i + len(chunk)} into {schema}.{table_name!r}"

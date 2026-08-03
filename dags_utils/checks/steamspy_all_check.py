@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import polars as pl
+from pydantic import BaseModel, ConfigDict
 
 from dags_utils.commons.clickhouse import ClickHouseClient
 
@@ -11,6 +12,17 @@ log = logging.getLogger(__name__)
 
 class CheckError(Exception):
     """Raised when a check fails."""
+
+
+class Check(BaseModel):
+    """DQ thresholds and the table the metrics are written to."""
+
+    model_config = ConfigDict(frozen=True)
+
+    meta_schema_name: str = "raw_dq"
+    meta_check_tb_name: str = "steamspy_check"
+    warn_threshold: float = 0.20
+    error_threshold: float = 0.50
 
 
 def steamspy_all_check_values(
