@@ -1,4 +1,5 @@
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -35,7 +36,8 @@ class SteamSpyAllModel(BaseModel):
         return None if isinstance(v, str) and not v.strip() else v
 
 class Meta:
-    order_by = ("appid", "row_hash")
-    partition_by = "toStartOfMonth(ver)"
-    engine = "ReplacingMergeTree(last_update)"
     schema: str = "raw"
+    table_name: str = "steamspy_all"
+    order_by = ("appid", "row_hash")
+    partition_by = "toStartOfMonth(last_update)"
+    engine = "ReplacingMergeTree(ver)"
