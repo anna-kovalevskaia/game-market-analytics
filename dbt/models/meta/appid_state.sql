@@ -9,12 +9,9 @@
 
 {% if execute and this is not none -%}
 WITH
-    -- hash differs from the stored one; NULL when the game is missing from the snapshot
-    ifNull(this.row_hash_cur, 0) != nullIf(stg.row_hash, 0) AS compared,
-    -- rerun guard: false once this run_date is already recorded
-    toDate(last_update) > (SELECT toDate(max(last_changed)) FROM {{ this }}) AS is_new_date,
-    -- use the fresh comparison on the first run for this date, the stored flag on a repeat run
-    if(is_new_date, compared, this.is_changed) AS changed
+    ifNull(this.row_hash_cur, 0) != nullIf(stg.row_hash, 0) AS compared, -- hash differs from the stored one; NULL when the game is missing from the snapshot
+    toDate(last_update) > (SELECT toDate(max(last_changed)) FROM {{ this }}) AS is_new_date,    -- rerun guard: false once this run_date is already recorded
+    if(is_new_date, compared, this.is_changed) AS changed    -- use the fresh comparison on the first run for this date, the stored flag on a repeat run
 SELECT
     appid,
     if(changed, stg.row_hash, this.row_hash_cur) as row_hash_cur,

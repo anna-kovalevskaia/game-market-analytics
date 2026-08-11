@@ -1,3 +1,19 @@
+"""
+DEPRECATED — schema deployment does not belong in Airflow.
+
+The design polls main for new commits every 30 minutes and keeps the last
+deployed SHA in an Airflow Variable. That makes deployment depend on scheduler
+state: losing the Variable, editing it by hand or force-pushing silently skips a
+range of commits, and the failure only surfaces later as a missing table.
+
+It also cannot do what its name promises. The generated statement is
+CREATE TABLE IF NOT EXISTS, so a changed model deploys "successfully" and does
+nothing at all — the live table keeps the old columns.
+
+Planned replacement: create the first DDL by hand, then keep numbered migration
+files (001_*.sql, 002_*.sql, ...) applied deliberately, not on a timer.
+"""
+
 import importlib
 import logging
 import types
@@ -5,7 +21,7 @@ import types
 from pydantic import BaseModel
 
 from dags_utils.commons.clickhouse import ClickHouseClient
-from dags_utils.commons.model_types import model_to_clickhouse_columns
+from dags_utils.commons.model_types import create_ddl_from_data_model, model_to_clickhouse_columns
 from dags_utils.sources.github import GitHubClient
 
 logger = logging.getLogger(__name__)
@@ -99,7 +115,7 @@ def deploy_models(
         order_by = ", ".join(meta.order_by)
         partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
         engine = getattr(meta, "engine", "MergeTree")
-        ddl = client.create_ddl_from_data_model(
+        ddl = create_ddl_from_data_model(
             schema=meta.schema,
             table_name=meta.table_name,
             columns=columns,

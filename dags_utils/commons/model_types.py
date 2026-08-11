@@ -92,6 +92,36 @@ def model_to_clickhouse_columns(model: type[BaseModel]) -> list[tuple[str, str]]
     return columns
 
 
+def create_ddl_from_data_model(
+    schema: str,  # ClickHouse schema/database name
+    table_name: str,
+    columns: list[tuple[str, str]],  # [(name, clickhouse_type), ...]
+    order_by: str,
+    engine: str = "MergeTree",
+    partition_by: str = "toStartOfMonth(last_update)",
+) -> str:
+    """Build a CREATE TABLE statement from model-derived columns.
+
+    Lives here rather than on the ClickHouse client: building the statement is
+    pure string work over the model's columns and needs no connection.
+    """
+    cols_sql = ",\n    ".join([f"{name} {clickhouse_type}" for name, clickhouse_type in columns])
+
+    hash_args = ", ".join(f"ifNull(toString({name}), '\\\\N')" for name, _ in columns)
+    cols_sql += f",\n    row_hash UInt64 MATERIALIZED cityHash64({hash_args})"
+    cols_sql += ",\n    last_update DateTime64(3, 'UTC') Default toDateTime(now64(6),'UTC')"
+    cols_sql += ",\n    ver Int64 MATERIALIZED -toUnixTimestamp64Milli(last_update)"
+
+    parts = [
+        f"CREATE TABLE IF NOT EXISTS {schema}.{table_name} (\n    {cols_sql}\n)",
+        f"ENGINE = {engine}",
+    ]
+    if partition_by:
+        parts.append(f"PARTITION BY {partition_by}")
+    parts.append(f"ORDER BY ({order_by})")
+    return "\n".join(parts)
+
+
 def model_to_polars_schema(model: type[BaseModel]) -> dict[str, Any]:
     """
     Map every field of a model to its polars dtype.

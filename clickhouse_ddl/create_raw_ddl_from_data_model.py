@@ -3,8 +3,7 @@ import importlib
 import sys
 from pathlib import Path
 
-from dags_utils.commons.clickhouse import ClickHouseClient
-from dags_utils.commons.model_types import model_to_clickhouse_columns
+from dags_utils.commons.model_types import create_ddl_from_data_model, model_to_clickhouse_columns
 from dags_utils.schema_deploy import _get_module_meta, _get_module_model
 
 
@@ -14,7 +13,7 @@ def gen_ddl(module_name: str) -> None:
     model = _get_module_model(module)
     meta = _get_module_meta(module)
 
-    ddl = ClickHouseClient.create_ddl_from_data_model(
+    ddl = create_ddl_from_data_model(
         schema=meta.schema,
         table_name=meta.table_name,
         columns=model_to_clickhouse_columns(model),

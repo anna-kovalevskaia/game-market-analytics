@@ -1,3 +1,11 @@
+"""
+DEPRECATED — operations for the SteamSpy load, which is no longer scheduled.
+
+See dags_utils/sources/steamspy.py for why the source was dropped. Kept as the
+reference implementation of the extract -> validate -> parquet -> ClickHouse
+chain that the Steam sources follow.
+"""
+
 import logging
 import shutil
 from datetime import datetime
