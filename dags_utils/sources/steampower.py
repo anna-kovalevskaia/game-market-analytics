@@ -34,7 +34,6 @@ class SteamPowerClient:
         self._timeout = timeout
         self._session = requests.Session()
 
-
     def _get(self, path: str, params: dict[str, Any]) -> Any:
         url = f"{self._base_url}{path}"
         logger.info("Steam GET %s params=%s", url, params)
@@ -59,11 +58,7 @@ class SteamPowerClient:
         return rows
 
     def steampower_get_search(
-        self,
-        start: int,
-        count: int,
-        sort_by: str,
-        category1: int
+        self, start: int, count: int, sort_by: str, category1: int
     ) -> list[dict[str, Any]]:
         """One /search/results/ page. Returns [{"appid": int, "name": str}, ...].
 
@@ -95,7 +90,7 @@ class SteamPowerClient:
         start: int,
         count: int,
         sort_by: str,
-        category1: int
+        category1: int,
     ) -> Iterator[tuple[int, list[dict[str, Any]]]]:
         if max_pages < 1:
             raise SteamPowerParameterError(f"max_pages must be >= 1, got {max_pages}")
@@ -108,10 +103,7 @@ class SteamPowerClient:
                 time.sleep(delay_seconds)
 
             rows = self.steampower_get_search(
-                start=offset,
-                count=count,
-                sort_by=sort_by,
-                category1=category1
+                start=offset, count=count, sort_by=sort_by, category1=category1
             )
 
             if not rows:
@@ -129,4 +121,3 @@ class SteamPowerClient:
                 max_pages,
                 offset,
             )
-
