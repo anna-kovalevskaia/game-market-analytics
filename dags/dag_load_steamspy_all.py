@@ -1,3 +1,13 @@
+"""
+DEPRECATED — the SteamSpy load is switched off; see dags_utils/sources/steamspy.py
+for the measurements behind that call. The file must keep the words "dag" and
+"airflow" so DagBag does not skip it silently.
+
+The DAG is not registered: the call that builds it at the bottom is commented out.
+Note that cosmos_dbt_dag is scheduled on the raw.steamspy_all asset, which only
+this DAG produces — with the load off, dbt has no trigger left.
+"""
+
 import logging
 from pathlib import Path
 
@@ -65,4 +75,5 @@ def steamspy_all_process():
     steamspy_all_insert_to_clickhouse(run_id_path=tmp_dir)
 
 
-steamspy_all_process()
+# DEPRECATED: source dropped, the DAG is intentionally left unregistered.
+# steamspy_all_process()

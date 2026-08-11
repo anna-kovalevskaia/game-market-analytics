@@ -1,3 +1,12 @@
+"""
+DEPRECATED — deploying ClickHouse schemas from an Airflow DAG was a wrong turn;
+see dags_utils/schema_deploy.py for the reasoning. The file keeps the words "dag"
+and "airflow" so DagBag does not skip it silently.
+
+Left registered for now: switching it off is a deliberate step the owner takes,
+and unregistering it here would hide that decision inside a refactor.
+"""
+
 import logging
 from datetime import timedelta
 

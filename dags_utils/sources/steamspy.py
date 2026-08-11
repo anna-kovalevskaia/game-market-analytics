@@ -1,3 +1,22 @@
+"""
+DEPRECATED — SteamSpy is no longer collected. Kept for reference only.
+
+Measured on our own 5 daily snapshots (2026-07-31 .. 2026-08-04):
+
+* ccu, positive, negative, owners did not change for a single one of the 82 659
+  games. Only price (4 008 games) and discount (3 953) move.
+* Palworld reported ccu=18 028 while Valve returned 373 857 live players.
+* Playtime fields (average_2weeks, median_forever, ...) are zero for 100/100 of
+  the top games — SteamSpy lost that data when Valve made profiles private.
+* request=top100in2weeks returns byte-identical values to request=all: one cache,
+  not two sources.
+* The catalog no longer grows: 0 new appids on two consecutive full runs, and
+  only 6 of 30 releases from a single day are known at all.
+
+Replaced by dags_utils/sources/steampower.py (store search) for the catalog and
+by the Steam endpoints for everything else.
+"""
+
 import logging
 import time
 from collections.abc import Iterator
