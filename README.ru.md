@@ -36,7 +36,6 @@
 | Источник | Что даёт | Почему |
 |---|---|---|
 | Steam Web API / Store API | Метаданные игр, ценовые тиры, CCU | Официальный, стабильный, бесплатный |
-| SteamSpy | Оценка owners, прокси выручки | Индустриальный стандарт для Steam-аналитики |
 | IGDB API | Структурированная классификация жанров, рейтинги критиков | Steam-теги неструктурированные; IGDB даёт чистую таксономию |
 | Twitch API | Часы просмотров, вовлечённость | Измеряет медийный вес игровых тайтлов |
 
@@ -45,7 +44,7 @@
 | Инструмент | Роль | Почему, а не альтернативы |
 |---|---|---|
 | Apache Airflow | Оркестрация | Python-native DAG с управлением зависимостями, ретраями, UI и алертингом. (Dagster или Prefect, возможно, лучше для данной задачи) |
-| ClickHouse | Хранилище данных | Колоночная OLAP СУБД для субсекундных агрегаций на append-only данных временных рядов. PostgreSQL заточен под OLTP и медленен на аналитических запросах. Облачные решения (AWS, Databricks) - избыточны без публичного ассистента, добавляются в фазе 3 когда публичный доступ потребует инфраструктуры. |
+| ClickHouse | Хранилище данных | Колоночная OLAP СУБД для субсекундных агрегаций на append-only данных временных рядов. PostgreSQL заточен под OLTP и медленен на аналитических запросах. |
 | dbt | Слой трансформаций | Data-as-Code: Staging -> Core -> Marts с автогенерацией lineage-графа, документации, Jinja-макросов и тестов качества данных. SQL модели читаемы и поддерживаемы в отличие от raw ETL скриптов. |
 | Google Sheets | Облачный буфер | Лёгкий бесплатный слой для публикации готовых под дашборд витрин из локального DWH в BI без серверного бэкенда. В облако уходят только агрегированные, готовые под дашборд витрины. |
 | Tableau Public | Визуализация | Подключён к Google Sheets для автоматического ежедневного обновления публичного дашборда. |
@@ -54,9 +53,9 @@
 ## Архитектура
 
 ```
-[Steam API]  [SteamSpy]  [IGDB]  [Twitch API]
-       |           |        |          |
-       +-----------+--------+----------+
+  [Steam API]       [IGDB]       [Twitch API]
+       |               |               |
+       +---------------+---------------+
                        |
                   [Airflow DAGs]
                   (Python ETL, ежедневное расписание,
@@ -83,7 +82,7 @@
 ## Этапы разработки
 
 **Фаза 1 - Local-First MVP** <- текущая
-- Steam API + SteamSpy + IGDB + Twitch -> ClickHouse
+- Steam API + IGDB + Twitch -> ClickHouse
 - Airflow DAGs с ежедневным расписанием, ретраями, алертингом
 - dbt модели: staging -> core -> marts
 - Google Sheets как облачный буфер
@@ -92,15 +91,15 @@
 **Фаза 2 - Углубление аналитики**
 - Расширение dbt слоя: когортный анализ, lifecycle метрики жанров
 
-**Фаза 3 - Миграция в облако**
-- Триггер: публичный ассистент требует облачную инфраструктуру
-- ClickHouse -> AWS (S3 + Redshift Serverless) или ClickHouse Cloud
-- Airflow -> MWAA или оставить локально
-- Tableau Public -> Superset или Tableau Server
+**Фаза 3 - Вынос на удалённый сервер (план)**
+- Airflow + ClickHouse на арендованном сервере, доступ через VPN
+- DAG'и формируют JSON-витрины -> объектное хранилище (S3), новый файл перезаписывает старый
+- Дашборд: статический HTML в том же хранилище, читает JSON
+- Без управляемых сервисов и BI-сервера
 
-**Фаза 4 - Intelligence Layer**
-- MCP сервер для Redshift / ClickHouse Cloud
-- Публичный BI ассистент: строгая цепочка без LangChain, dbt схема как контекст, генерация SQL под капотом
+**Фаза 4 - Intelligence Layer (план)**
+- MCP сервер поверх ClickHouse
+- BI ассистент: строгая цепочка без LangChain, dbt схема как контекст, генерация SQL под капотом
 - Ответ в виде графика или таблицы в зависимости от размера результата
 - Интеграция с Continue.dev для помощи в разработке проекта внутри IDE
 
@@ -136,37 +135,43 @@
 game-market-analytics/
   |- README.md
   |- README.ru.md
+  |- pyproject.toml
+  |- requirements.txt
   |- infra/
-  |    |- README.md
+  |    |- setup.md
   |    |- docker-compose.yml
   |    |- Dockerfile.airflow
-  |    |- Dockerfile.dbt
-  |    +- .env.example
+  |    |- requirements-airflow.txt
+  |    |- .env.example
+  |    +- clickhouse/
   |- dags/
-  |    |- README.md
-  |    |- sources/
-  |    |    |- steam/
-  |    |    |- steamspy/
-  |    |    |- igdb/
-  |    |    +- twitch/
-  |    |- exports_bi_marts/
   |    +- *.py
+  |- dags_utils/
+  |    |- sources/
+  |    |- operations/
+  |    |- checks/
+  |    |- commons/
+  |- data_models/
+  |- clickhouse_ddl/
+  |    |- create_raw_ddl_from_data_model.py
+  |    |- raw/
+  |    +- raw_dq/
   |- dbt/
-  |    |- README.md
   |    |- dbt_project.yml
   |    |- profiles.yml
   |    |- models/
   |    |    |- staging/
   |    |    |- core/
-  |    |    +- marts/
+  |    |    |- marts/
+  |    |    +- meta/
   |    |- macros/
   |    +- tests/
-  +- docs/
+  +- .github/
+       +- workflows/
 ```
 
 ## Ограничения
 
-- SteamSpy предоставляет оценки, а не реальные данные о продажах
 - Прокси выручки приблизителен: owners x price
 - Корреляция между метриками не означает причинно-следственную связь
 - Доступность данных зависит от настроек приватности профилей Steam
