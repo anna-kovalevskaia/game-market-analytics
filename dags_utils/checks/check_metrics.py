@@ -21,7 +21,7 @@ class Check(BaseModel):
     MEDIAN_COLUMNS: tuple[str, ...] = ()
     WARN_THRESHOLD: float = 0.20
     ERROR_THRESHOLD: float = 0.50
-    COUNT_METRIC = "row_count"
+    COUNT_METRIC: str = "row_count"
 
 
 def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> pl.DataFrame:
