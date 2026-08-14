@@ -14,7 +14,7 @@ from pathlib import Path
 from airflow.sdk import Variable, dag, get_current_context, task
 from pendulum import datetime, parse
 
-from dags_utils.checks.steamspy_all_check import Check
+from dags_utils.checks.check_metrics import Check
 from dags_utils.commons.assets import table_asset
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.operations.steamspy_all_ops import (

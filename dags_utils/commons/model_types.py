@@ -52,12 +52,7 @@ _ARRAY_TYPES = frozenset({list[str], list[int], list[float]})
 
 
 def _unwrap_optional(field_name: str, annotation: Any) -> tuple[Any, bool]:
-    """
-    Return (inner annotation, is_optional).
 
-    Only `X | None` is accepted: a union of two unrelated types has no single
-    column type, so it is rejected here rather than silently picking one.
-    """
     if get_origin(annotation) not in (Union, types.UnionType):
         return annotation, False
 
@@ -123,13 +118,7 @@ def create_ddl_from_data_model(
 
 
 def model_to_polars_schema(model: type[BaseModel]) -> dict[str, Any]:
-    """
-    Map every field of a model to its polars dtype.
 
-    Passing this schema to `pl.DataFrame` disables type inference: without it a
-    page where every value of a sparse column is None is typed as Null, and
-    concatenating it with a page holding real values fails.
-    """
     schema: dict[str, Any] = {}
     for name, field in model.model_fields.items():
         inner, _ = _unwrap_optional(name, field.annotation)

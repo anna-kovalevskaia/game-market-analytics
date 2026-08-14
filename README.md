@@ -39,7 +39,6 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | Source | What it provides | Why |
 |---|---|---|
 | Steam Web API / Store API | Game metadata, price tiers, CCU | Official, stable, free |
-| SteamSpy | Owners estimate, revenue proxy | Industry standard for Steam analytics |
 | IGDB API | Structured genre classification, critic ratings | Steam tags are unstructured; IGDB provides clean taxonomy |
 | Twitch API | Viewing hours, stream engagement | Measures media weight of game titles |
 
@@ -49,7 +48,7 @@ Investigate historical data from the gaming industry and analyze how popularity 
 | Tool | Role | Why this, not alternatives |
 |---|---|---|
 | Apache Airflow | Orchestration | Python-native DAGs with dependency management, retry logic, UI, and alerting. (It might be better to use Dagster or Prefect for a project like this) |
-| ClickHouse | Data warehouse | Columnar OLAP database optimized for sub-second aggregations on append-only time-series data. PostgreSQL is OLTP and slow on analytical queries. Cloud solutions (AWS, Databricks) are unnecessary overhead without a public assistant - added in Phase 3 when public access requires it. |
+| ClickHouse | Data warehouse | Columnar OLAP database optimized for sub-second aggregations on append-only time-series data. PostgreSQL is OLTP and slow on analytical queries.|
 | dbt | Transformation layer | Data-as-Code: Staging -> Core -> Marts, with auto-generated lineage graph, documentation, Jinja macros, and data quality tests. SQL models are readable and maintainable unlike raw ETL scripts. |
 | Google Sheets | Cloud buffer | Lightweight, free cloud layer for publishing dashboard-ready marts from local DWH to the BI layer - no server required. Only pre-aggregated, dashboard-ready data is pushed to the cloud. |
 | Tableau Public | Visualization | Connected to Google Sheets for automatic daily refresh of the public dashboard. |
@@ -58,9 +57,9 @@ Investigate historical data from the gaming industry and analyze how popularity 
 ## Architecture
 
 ```
-[Steam API]  [SteamSpy]  [IGDB]  [Twitch API]
-       |           |        |          |
-       +-----------+--------+----------+
+  [Steam API]       [IGDB]       [Twitch API]
+       |               |               |
+       +---------------+---------------+
                        |
                   [Airflow DAGs]
                   (Python ETL, daily schedule,
@@ -88,7 +87,7 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 ## Development Roadmap
 
 **Phase 1 - Local-First MVP** <- current
-- Steam API + SteamSpy + IGDB + Twitch -> ClickHouse
+- Steam API + IGDB + Twitch -> ClickHouse
 - Airflow DAGs with daily schedule, retries, alerting
 - dbt models: staging -> core -> marts
 - Google Sheets as cloud buffer
@@ -97,15 +96,15 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 **Phase 2 - Analytical Depth**
 - Extended dbt layer: cohort analysis, genre lifecycle metrics
 
-**Phase 3 - Cloud Migration**
-- Trigger: public assistant requires cloud infrastructure
-- ClickHouse -> AWS (S3 + Redshift Serverless) or ClickHouse Cloud
-- Airflow -> MWAA or retain local
-- Tableau Public -> Superset or Tableau Server
+**Phase 3 - Remote deployment (planned)**
+- Airflow + ClickHouse on a rented server, access over VPN
+- DAGs build JSON marts -> object storage (S3), each run overwrites the previous file
+- Dashboard: static HTML in the same storage, reads the JSON
+- No managed services, no BI server
 
-**Phase 4 - Intelligence Layer**
-- MCP server for Redshift / ClickHouse Cloud
-- Public BI assistant: strict chain without LangChain, dbt schema as context, SQL generated under the hood
+**Phase 4 - Intelligence Layer (a plan)**
+- MCP server over ClickHouse
+- BI assistant: strict chain without LangChain, dbt schema as context, SQL generated under the hood
 - Response as chart or table depending on result size
 - Continue.dev integration for development assistance inside IDE
 
@@ -144,38 +143,44 @@ For detailed setup instructions, see [infra/setup.md](infra/README.md#6-ai-assis
 game-market-analytics/
   |- README.md
   |- README.ru.md
+  |- pyproject.toml
+  |- requirements.txt
   |- infra/
-  |    |- README.md
+  |    |- setup.md
   |    |- docker-compose.yml
   |    |- Dockerfile.airflow
-  |    |- Dockerfile.dbt
-  |    +- .env.example
+  |    |- requirements-airflow.txt
+  |    |- .env.example
+  |    +- clickhouse/
   |- dags/
-  |    |- README.md
-  |    |- sources/
-  |    |    |- steam/
-  |    |    |- steamspy/
-  |    |    |- igdb/
-  |    |    +- twitch/
-  |    |- exports_bi_marts/
   |    +- *.py
+  |- dags_utils/
+  |    |- sources/
+  |    |- operations/
+  |    |- checks/
+  |    |- commons/
+  |- data_models/
+  |- clickhouse_ddl/
+  |    |- create_raw_ddl_from_data_model.py
+  |    |- raw/
+  |    +- raw_dq/
   |- dbt/
-  |    |- README.md
   |    |- dbt_project.yml
   |    |- profiles.yml
   |    |- models/
   |    |    |- staging/
   |    |    |- core/
-  |    |    +- marts/
+  |    |    |- marts/
+  |    |    +- meta/
   |    |- macros/
   |    +- tests/
-  +- docs/
+  +- .github/
+       +- workflows/
 ```
 
 
 ## Limitations
 
-- SteamSpy provides estimates, not actual sales figures
 - Revenue proxy is approximate and based on owners x price
 - Correlation between metrics does not imply causation
 - Data availability depends on Steam profile privacy settings

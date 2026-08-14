@@ -14,7 +14,7 @@ from pathlib import Path
 import polars as pl
 from pydantic import BaseModel
 
-from dags_utils.checks.steamspy_all_check import Check, steamspy_all_check_values
+from dags_utils.checks.check_metrics import Check, check_metrics
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.commons.model_types import model_to_polars_schema
 from dags_utils.sources.steamspy import SteamSpyClient
@@ -61,6 +61,7 @@ def steamspy_all_parquet_to_clickhouse(
     client: ClickHouseClient,
     run_id_path: Path,
     batch_size: int,
+    raw: type,
     meta: type,
     cur_date: datetime,
     check: Check,
@@ -69,21 +70,11 @@ def steamspy_all_parquet_to_clickhouse(
 
     logger.info("SteamSpy all started to check values in %s", run_id_path)
 
-    new_values_check = steamspy_all_check_values(
-        run_id_path,
-        client,
-        meta.schema,
-        meta.table_name,
-        check.meta_schema_name,
-        check.meta_check_tb_name,
-        cur_date,
-        check.warn_threshold,
-        check.error_threshold,
-    )
+    metrics = check_metrics(run_id_path, client, raw, meta, check, cur_date)
 
-    client.insert_parquet_to_ch_batch(meta.schema, meta.table_name, run_id_path, batch_size)
+    client.insert_parquet_to_ch_batch(raw.schema, raw.table_name, run_id_path, batch_size)
 
-    client.insert_polars_to_ch(check.meta_schema_name, check.meta_check_tb_name, new_values_check)
+    client.insert_polars_to_ch(meta.schema, meta.table_name, metrics)
 
     shutil.rmtree(run_id_path, ignore_errors=True)
     logger.info("SteamSpy tmp cleaned up: %s", run_id_path)
