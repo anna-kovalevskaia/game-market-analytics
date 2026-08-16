@@ -6,6 +6,8 @@ from typing import Any
 
 import requests
 from airflow.models import Variable
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,14 @@ class SteamPowerClient:
         self._base_url = Variable.get("steam_store_base_url").rstrip("/")
         self._timeout = timeout
         self._session = requests.Session()
+        retry = Retry(
+            total=5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            backoff_factor=5,  # 5, 10, 20, 40, 80 seconds
+            allowed_methods=["GET"],
+            respect_retry_after_header=True,
+        )
+        self._session.mount("https://", HTTPAdapter(max_retries=retry))
 
     def _get(self, path: str, params: dict[str, Any]) -> Any:
         url = f"{self._base_url}{path}"

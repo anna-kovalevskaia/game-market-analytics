@@ -3,7 +3,6 @@ from pathlib import Path
 from airflow.sdk import Variable, dag, get_current_context, task
 from pendulum import datetime, parse
 
-from dags_utils.checks.check_metrics import Check
 from dags_utils.commons.assets import table_asset
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.operations.steampower_appid_ops import (
@@ -19,7 +18,7 @@ from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
 def steamappid_extract() -> str:
 
     steampower_client = SteamPowerClient(timeout=10)
-    params = {"delay_seconds": 1.3, "count": 100, "sort_by": "Released_DESC", "max_rows": 2000}
+    params = {"delay_seconds": 1.7, "count": 100, "sort_by": "Name_ASC"}
     ctx = get_current_context()
     run_id = ctx["run_id"]
     dag_id = ctx["dag"].dag_id
@@ -48,14 +47,14 @@ def steamappid_insert_to_clickhouse(run_id_path: str) -> None:
         batch_size=2000,
         raw=SteamPowerAppidTable,
         raw_dq=MetricsStatusTable,
-        check=Check(),
+        check=None,
         cur_date=cur_date,
     )
 
 
 @dag(
-    dag_id="steamappid_raw_data_daily",
-    schedule="30 0 * * 1-6",
+    dag_id="steamappid_raw_data_weekly",
+    schedule="30 0 * * 0",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

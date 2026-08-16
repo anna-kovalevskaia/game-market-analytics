@@ -42,7 +42,7 @@ def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> 
             .then(pl.lit("count"))
             .otherwise(pl.lit("median"))
             .alias("agg_type"),
-            pl.lit(cur_date).alias("checked_at"),
+            pl.lit(cur_date).alias("last_update"),
         )
     )
 
@@ -51,21 +51,22 @@ def fetch_previous_metrics(
     client: ClickHouseClient, raw: type, raw_dq: type, check: Check, cur_date: datetime
 ) -> dict[str, float]:
 
-    metrics_list = ", ".join(f"'{name}'" for name in check.MEDIAN_COLUMNS())
+    metric_names = [check.COUNT_METRIC, *check.MEDIAN_COLUMNS]
+    metrics_list = ", ".join(f"'{name}'" for name in metric_names)
 
     previous = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
-                SELECT toDate(max(checked_at))
+                SELECT max(last_update)
                 FROM {raw_dq.schema}.{raw_dq.table_name}
                 WHERE schema_name = '{raw.schema}'
                   AND table_name  = '{raw.table_name}'
-                  AND checked_at <= toDateTime64('{cur_date}', 3, 'UTC')
+                  AND last_update <= toDateTime64('{cur_date}', 3, 'UTC')
             ) AS last_check
 
             SELECT metrics_name, metrics_value
             FROM {raw_dq.schema}.{raw_dq.table_name}
             PREWHERE schema_name = '{raw.schema}' AND table_name = '{raw.table_name}'
-            WHERE toDate(checked_at) = last_check
+            WHERE toDate(last_update) = last_check
               AND metrics_name IN ({metrics_list})
             """))
 

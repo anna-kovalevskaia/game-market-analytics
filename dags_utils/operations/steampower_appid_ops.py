@@ -19,7 +19,8 @@ class IterArguments(BaseModel):
     delay_seconds: float
     count: int
     sort_by: str
-    max_rows: int
+    max_rows: int | None = None
+
 
 def _steamappid_write_to_tmp(data: list[SteamPowerAppidModel], full_file_path: Path) -> None:
     """Write Steam Search Appid data to a temporary file."""
@@ -38,10 +39,12 @@ def steamappid_extract_to_tmp(client: SteamPowerClient, run_id_path: Path, **kwa
 
     iter_args = IterArguments(**kwargs)
 
-    for page_num, page_data in client.steampower_iter_search(
+    pages = client.steampower_iter_search(
         iter_args.delay_seconds, iter_args.count, iter_args.sort_by, iter_args.max_rows
-    ):
-        validate_result = [SteamPowerAppidModel(**row) for row in page_data.values()]
+    )
+
+    for page_num, page_rows in enumerate(pages):
+        validate_result = [SteamPowerAppidModel(**row) for row in page_rows]
         logger.info("SteamPower validated page=%s records=%s", page_num, len(validate_result))
 
         full_file_path = run_id_path / f"page_{page_num}.parquet"
@@ -55,18 +58,20 @@ def steamappid_parquet_to_clickhouse(
     batch_size: int,
     raw: type,
     raw_dq: type,
-    check: Check,
+    check: Check | None,
     cur_date: datetime,
 ) -> None:
     """Validate the staged values, insert them in batches, record the DQ metrics."""
 
     logger.info("SteamPowerAppid all started to check values in %s", run_id_path)
 
-    metrics = check_metrics(run_id_path, client, raw, raw_dq, check, cur_date)
+    if check:
+        metrics = check_metrics(run_id_path, client, raw, raw_dq, check, cur_date)
 
     client.insert_parquet_to_ch_batch(raw.schema, raw.table_name, run_id_path, batch_size)
 
-    client.insert_polars_to_ch(raw_dq.schema, raw_dq.table_name, metrics)
+    if check:
+        client.insert_polars_to_ch(raw_dq.schema, raw_dq.table_name, metrics)
 
     shutil.rmtree(run_id_path, ignore_errors=True)
     logger.info("SteamPower tmp cleaned up: %s", run_id_path)
