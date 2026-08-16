@@ -22,7 +22,7 @@ from dags_utils.operations.steamspy_all_ops import (
     steamspy_all_parquet_to_clickhouse,
 )
 from dags_utils.sources.steamspy import SteamSpyClient
-from data_models.steamspy_all import Meta as SteamSpyAllMeta
+from data_models.steamspy_all import TableConfig as SteamSpyAllTable
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def steamspy_all_extract() -> str:
     return str(run_id_path)
 
 
-@task(outlets=[table_asset(SteamSpyAllMeta)])
+@task(outlets=[table_asset(SteamSpyAllTable)])
 def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
 
     fixed_run_id_path = Path(run_id_path)
@@ -57,7 +57,7 @@ def steamspy_all_insert_to_clickhouse(run_id_path: str) -> None:
         client=ch_client,
         run_id_path=fixed_run_id_path,
         batch_size=100,
-        meta=SteamSpyAllMeta,
+        raw=SteamSpyAllTable,
         cur_date=cur_date,
         check=Check(),
     )
