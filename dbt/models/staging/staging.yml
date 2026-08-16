@@ -29,3 +29,21 @@ models:
         description: 'Original price in cents.'
       - name: discount
         description: 'Discount, percent.'
+
+  - name: stg_steampower_appid
+    description: >
+      Deduplicated appid catalog from the Steam store search: one row per unique
+      (appid, row_hash) pair. Three DAGs feed the raw table with different slices
+      of the same catalog, so a game can arrive from any of them; the dedup makes
+      that invisible downstream.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+        tests:
+          - not_null
+      - name: name
+        description: 'Game title as returned for l=en.'
+      - name: row_hash
+        description: 'Row hash over appid and name, used to detect renames.'
+      - name: last_update
+        description: 'When this state was first seen.'

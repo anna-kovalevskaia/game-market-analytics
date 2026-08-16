@@ -64,9 +64,11 @@ class SteamPowerClient:
         logger.info("Steam search: ok, rows=%s", len(rows))
         return rows
 
-    def steampower_get_total_count(self, category1: int = 998) -> int:
+    def steampower_get_total_count(self, category1: int = 998, specials: int = 0) -> int:
         """Get the number of results for a given sort_by and category1."""
-        payload = self._get(self.SEARCH_PATH, {"infinite": 1, "category1": category1})
+        payload = self._get(
+            self.SEARCH_PATH, {"infinite": 1, "category1": category1, "specials": specials}
+        )
 
         total_count = payload.get("total_count")
         if not isinstance(total_count, int) or total_count < 0:
@@ -76,11 +78,7 @@ class SteamPowerClient:
         return total_count
 
     def steampower_get_search(
-        self,
-        start: int,
-        count: int,
-        sort_by: str,
-        category1: int = 998,
+        self, start: int, count: int, sort_by: str, category1: int = 998, specials: int = 0
     ) -> list[dict[str, Any]]:
         """One /search/results/ page. Returns (items sent by the server, parsed rows)."""
         if start < 0:
@@ -97,6 +95,7 @@ class SteamPowerClient:
                 "count": count,
                 "sort_by": sort_by,
                 "category1": category1,
+                "specials": specials,
             },
         )
         items = payload.get("items") or []
@@ -105,7 +104,12 @@ class SteamPowerClient:
         return self._parse_search_items(items)
 
     def steampower_iter_search(
-        self, delay_seconds: float, count: int, sort_by: str, max_rows: int | None = None
+        self,
+        delay_seconds: float,
+        count: int,
+        sort_by: str,
+        max_rows: int | None = None,
+        specials: int = 0,
     ) -> Iterator[list[dict[str, Any]]]:
         """Walk the catalog from the newest rows backwards, yielding (offset, rows)."""
         if delay_seconds < 0:
@@ -118,7 +122,7 @@ class SteamPowerClient:
         if max_rows is not None:
             offsets = range(0, max_rows, count)
         else:
-            total_count = self.steampower_get_total_count()
+            total_count = self.steampower_get_total_count(specials=specials)
             offsets = range(0, total_count, count)
             logger.info("Steam search: total_count=%s, reading %s pages", total_count, len(offsets))
 
@@ -126,5 +130,7 @@ class SteamPowerClient:
             if offset > 0 and delay_seconds:
                 time.sleep(delay_seconds)
 
-            rows = self.steampower_get_search(start=offset, count=count, sort_by=sort_by)
+            rows = self.steampower_get_search(
+                start=offset, count=count, sort_by=sort_by, specials=specials
+            )
             yield rows
