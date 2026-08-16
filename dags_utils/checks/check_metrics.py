@@ -51,7 +51,7 @@ def fetch_previous_metrics(
     client: ClickHouseClient, raw: type, raw_dq: type, check: Check, cur_date: datetime
 ) -> dict[str, float]:
 
-    metrics_list = ", ".join(f"'{name}'" for name in check.metric_names())
+    metrics_list = ", ".join(f"'{name}'" for name in check.MEDIAN_COLUMNS())
 
     previous = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
