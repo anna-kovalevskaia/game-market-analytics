@@ -24,7 +24,9 @@ class Check(BaseModel):
     COUNT_METRIC: str = "row_count"
 
 
-def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> pl.DataFrame:
+def collect_metrics(
+    path: Path, raw: type, check: Check, cur_date: datetime, dag_id: str
+) -> pl.DataFrame:
 
     aggregates = [pl.len().cast(pl.Float64).alias(check.COUNT_METRIC)]
     if check.MEDIAN_COLUMNS:
@@ -36,6 +38,7 @@ def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> 
         .collect()
         .unpivot(variable_name="metrics_name", value_name="metrics_value")
         .with_columns(
+            pl.lit(dag_id).alias("dag_id"),
             pl.lit(raw.schema).alias("schema_name"),
             pl.lit(raw.table_name).alias("table_name"),
             pl.when(pl.col("metrics_name") == check.COUNT_METRIC)
@@ -48,7 +51,12 @@ def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> 
 
 
 def fetch_previous_metrics(
-    client: ClickHouseClient, raw: type, raw_dq: type, check: Check, cur_date: datetime
+    client: ClickHouseClient,
+    raw: type,
+    raw_dq: type,
+    check: Check,
+    cur_date: datetime,
+    dag_id: str,
 ) -> dict[str, float]:
 
     metric_names = [check.COUNT_METRIC, *check.MEDIAN_COLUMNS]
@@ -58,14 +66,17 @@ def fetch_previous_metrics(
             WITH (
                 SELECT max(last_update)
                 FROM {raw_dq.schema}.{raw_dq.table_name}
-                WHERE schema_name = '{raw.schema}'
+                WHERE dag_id = '{dag_id}'
+                  AND schema_name = '{raw.schema}'
                   AND table_name  = '{raw.table_name}'
                   AND last_update <= toDateTime64('{cur_date}', 3, 'UTC')
             ) AS last_check
 
             SELECT metrics_name, metrics_value
             FROM {raw_dq.schema}.{raw_dq.table_name}
-            PREWHERE schema_name = '{raw.schema}' AND table_name = '{raw.table_name}'
+            PREWHERE dag_id = '{dag_id}'
+                 AND schema_name = '{raw.schema}'
+                 AND table_name = '{raw.table_name}'
             WHERE toDate(last_update) = last_check
               AND metrics_name IN ({metrics_list})
             """))
@@ -116,15 +127,20 @@ def check_metrics(
     raw_dq: type,
     check: Check,
     cur_date: datetime,
+    dag_id: str,
 ) -> pl.DataFrame:
 
-    logger.info("Checking metrics for %s.%s in %s", raw.schema, raw.table_name, path)
+    logger.info(
+        "Checking metrics for %s.%s in %s (dag=%s)", raw.schema, raw.table_name, path, dag_id
+    )
 
-    metrics = collect_metrics(path, raw, check, cur_date)
-    previous = fetch_previous_metrics(client, raw, raw_dq, check, cur_date)
+    metrics = collect_metrics(path, raw, check, cur_date, dag_id)
+    previous = fetch_previous_metrics(client, raw, raw_dq, check, cur_date, dag_id)
 
     if not previous:
-        logger.info("No previous metrics for %s.%s, nothing to compare", raw.schema, raw.table_name)
+        logger.info(
+            "No previous metrics for %s from %s, nothing to compare", raw.table_name, dag_id
+        )
         return metrics
 
     compare_metrics(metrics, previous, raw, check)

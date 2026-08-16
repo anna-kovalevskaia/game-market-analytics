@@ -1,0 +1,22 @@
+sources:
+  - name: steampower
+    schema: raw
+    description: 'Raw Steam Store layer, loaded by Airflow.'
+    tables:
+      - name: steampower_appid
+        description: >
+          Appid catalog from the store search (/search/results/). Three DAGs feed
+          it with different slices: the full Name_ASC crawl, the daily
+          Released_DESC pages, and the discounted set. ReplacingMergeTree over
+          (appid, row_hash) collapses repeated observations of the same state.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: name
+            description: 'Game title as returned for l=en.'
+          - name: row_hash
+            description: 'Row hash over every column except last_update, used to detect changes.'
+          - name: last_update
+            description: 'When this state was first seen.'
