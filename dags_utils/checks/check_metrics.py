@@ -48,7 +48,7 @@ def collect_metrics(path: Path, raw: type, check: Check, cur_date: datetime) -> 
 
 
 def fetch_previous_metrics(
-    client: ClickHouseClient, raw: type, meta: type, check: Check, cur_date: datetime
+    client: ClickHouseClient, raw: type, raw_dq: type, check: Check, cur_date: datetime
 ) -> dict[str, float]:
 
     metrics_list = ", ".join(f"'{name}'" for name in check.metric_names())
@@ -56,14 +56,14 @@ def fetch_previous_metrics(
     previous = pl.from_arrow(client.sql_to_arrow(f"""
             WITH (
                 SELECT toDate(max(checked_at))
-                FROM {meta.schema}.{meta.table_name}
+                FROM {raw_dq.schema}.{raw_dq.table_name}
                 WHERE schema_name = '{raw.schema}'
                   AND table_name  = '{raw.table_name}'
                   AND checked_at <= toDateTime64('{cur_date}', 3, 'UTC')
             ) AS last_check
 
             SELECT metrics_name, metrics_value
-            FROM {meta.schema}.{meta.table_name}
+            FROM {raw_dq.schema}.{raw_dq.table_name}
             PREWHERE schema_name = '{raw.schema}' AND table_name = '{raw.table_name}'
             WHERE toDate(checked_at) = last_check
               AND metrics_name IN ({metrics_list})
@@ -112,7 +112,7 @@ def check_metrics(
     path: Path,
     client: ClickHouseClient,
     raw: type,
-    meta: type,
+    raw_dq: type,
     check: Check,
     cur_date: datetime,
 ) -> pl.DataFrame:
@@ -120,7 +120,7 @@ def check_metrics(
     logger.info("Checking metrics for %s.%s in %s", raw.schema, raw.table_name, path)
 
     metrics = collect_metrics(path, raw, check, cur_date)
-    previous = fetch_previous_metrics(client, raw, meta, check, cur_date)
+    previous = fetch_previous_metrics(client, raw, raw_dq, check, cur_date)
 
     if not previous:
         logger.info("No previous metrics for %s.%s, nothing to compare", raw.schema, raw.table_name)

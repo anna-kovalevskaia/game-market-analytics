@@ -8,7 +8,7 @@ from cosmos.constants import ExecutionMode
 from pendulum import datetime
 
 from dags_utils.commons.assets import table_asset
-from data_models.steamspy_all import Meta as SteamSpyAllMeta
+from data_models.steamspy_all import TableConfig as SteamSpyAllTable
 
 DBT_DIR = Path(__file__).resolve().parents[1] / "dbt"  # dbt/ sits next to dags/ in both envs
 DBT_BIN = os.getenv("DBT_EXECUTABLE_PATH")  # image: dbt_venv/bin/dbt, CI: dbt from PATH
@@ -32,7 +32,7 @@ dbt_dag = DbtDag(
             )
         }
     },
-    schedule=[table_asset(SteamSpyAllMeta)],
+    schedule=[table_asset(SteamSpyAllTable)],
     start_date=datetime(2026, 1, 1),
     catchup=False,
     dag_id="cosmos_dbt_dag",

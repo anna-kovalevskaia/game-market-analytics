@@ -35,7 +35,7 @@ class SteamSpyAllModel(BaseModel):
     def _empty_to_none(cls, v: Any) -> Any:
         return None if isinstance(v, str) and not v.strip() else v
 
-class Meta:
+class TableConfig:
     schema: str = "raw"
     table_name: str = "steamspy_all"
     order_by = ("appid", "row_hash")

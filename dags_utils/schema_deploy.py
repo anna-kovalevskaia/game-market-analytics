@@ -31,17 +31,17 @@ class SchemaDeployError(Exception):
     """Raised when model discovery or deployment fails."""
 
 
-def _get_module_meta(module: types.ModuleType) -> type:
-    meta = getattr(module, "Meta", None)
-    if not isinstance(meta, type) or meta.__module__ != module.__name__:
-        raise SchemaDeployError(f"module {module.__name__!r} must define a local Meta class")
-    if not getattr(meta, "order_by", None):
-        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty order_by")
-    if not getattr(meta, "table_name", None):
-        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty table_name")
-    if not getattr(meta, "schema", None):
-        raise SchemaDeployError(f"{module.__name__!r} Meta must define non-empty schema")
-    return meta
+def _get_module_table_config(module: types.ModuleType) -> type:
+    table_config = getattr(module, "TableConfig", None)
+    if not isinstance(table_config, type) or table_config.__module__ != module.__name__:
+        raise SchemaDeployError(f"module {module.__name__!r} must define a local TableConfig class")
+    if not getattr(table_config, "order_by", None):
+        raise SchemaDeployError(f"{module.__name__!r} TableConfig must define non-empty order_by")
+    if not getattr(table_config, "table_name", None):
+        raise SchemaDeployError(f"{module.__name__!r} TableConfig must define non-empty table_name")
+    if not getattr(table_config, "schema", None):
+        raise SchemaDeployError(f"{module.__name__!r} TableConfig must define non-empty schema")
+    return table_config
 
 
 def _get_module_model(module: types.ModuleType) -> type[BaseModel]:
@@ -101,7 +101,7 @@ def get_changed_models(
         if module_name.rsplit(".", 1)[-1].startswith("_"):
             continue
         module = importlib.import_module(f"data_models.{module_name}")
-        models[module_name] = (_get_module_model(module), _get_module_meta(module))
+        models[module_name] = (_get_module_model(module), _get_module_table_config(module))
 
     return models
 
@@ -110,14 +110,14 @@ def deploy_models(
     client: ClickHouseClient, models: dict[str, tuple[type[BaseModel], type]]
 ) -> None:
 
-    for module_name, (model, meta) in models.items():
+    for module_name, (model, table_config) in models.items():
         columns = model_to_clickhouse_columns(model)
-        order_by = ", ".join(meta.order_by)
-        partition_by = getattr(meta, "partition_by", "toStartOfMonth(last_update)")
-        engine = getattr(meta, "engine", "MergeTree")
+        order_by = ", ".join(table_config.order_by)
+        partition_by = getattr(table_config, "partition_by", "toStartOfMonth(last_update)")
+        engine = getattr(table_config, "engine", "MergeTree")
         ddl = create_ddl_from_data_model(
-            schema=meta.schema,
-            table_name=meta.table_name,
+            schema=table_config.schema,
+            table_name=table_config.table_name,
             columns=columns,
             order_by=order_by,
             engine=engine,
@@ -127,8 +127,8 @@ def deploy_models(
         client.execute_sql(ddl)
         logger.info(
             "Deployed table %s.%s from model %r (data_models/%s.py)",
-            meta.schema,
-            meta.table_name,
+            table_config.schema,
+            table_config.table_name,
             model.__name__,
             module_name,
         )
