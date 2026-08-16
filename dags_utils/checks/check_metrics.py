@@ -130,13 +130,17 @@ def check_metrics(
     dag_id: str,
 ) -> pl.DataFrame:
 
-    logger.info("Checking metrics for %s.%s in %s (dag=%s)", raw.schema, raw.table_name, path, dag_id)
+    logger.info(
+        "Checking metrics for %s.%s in %s (dag=%s)", raw.schema, raw.table_name, path, dag_id
+    )
 
     metrics = collect_metrics(path, raw, check, cur_date, dag_id)
     previous = fetch_previous_metrics(client, raw, raw_dq, check, cur_date, dag_id)
 
     if not previous:
-        logger.info("No previous metrics for %s from %s, nothing to compare", raw.table_name, dag_id)
+        logger.info(
+            "No previous metrics for %s from %s, nothing to compare", raw.table_name, dag_id
+        )
         return metrics
 
     compare_metrics(metrics, previous, raw, check)

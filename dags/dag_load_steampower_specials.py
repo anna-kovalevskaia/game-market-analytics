@@ -50,7 +50,7 @@ def steamappid_insert_to_clickhouse(run_id_path: str) -> None:
         raw_dq=MetricsStatusTable,
         check=Check(),
         cur_date=cur_date,
-        dag_id=ctx["dag"].dag_id
+        dag_id=ctx["dag"].dag_id,
     )
 
 

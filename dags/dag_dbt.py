@@ -34,7 +34,6 @@ dbt_dag = DbtDag(
             )
         }
     },
-
     schedule=AssetAny(
         table_asset(SteamSpyAllTable),
         table_asset(SteamPowerAppidTable),
