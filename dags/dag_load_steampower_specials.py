@@ -12,7 +12,7 @@ from dags_utils.operations.steampower_appid_ops import (
 )
 from dags_utils.sources.steampower import SteamPowerClient
 from data_models.metrics_status import TableConfig as MetricsStatusTable
-from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
+from data_models.steampower_specials import TableConfig as SteamPowerSpecialsTable
 
 
 @task
@@ -31,7 +31,7 @@ def steamappid_extract() -> str:
     return str(run_id_path)
 
 
-@task(outlets=[table_asset(SteamPowerAppidTable)])
+@task(outlets=[table_asset(SteamPowerSpecialsTable)])
 def steamappid_insert_to_clickhouse(run_id_path: str) -> None:
 
     fixed_run_id_path = Path(run_id_path)
@@ -46,7 +46,7 @@ def steamappid_insert_to_clickhouse(run_id_path: str) -> None:
         client=ch_client,
         run_id_path=fixed_run_id_path,
         batch_size=2000,
-        raw=SteamPowerAppidTable,
+        raw=SteamPowerSpecialsTable,
         raw_dq=MetricsStatusTable,
         check=Check(),
         cur_date=cur_date,

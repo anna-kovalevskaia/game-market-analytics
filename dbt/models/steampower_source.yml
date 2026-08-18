@@ -20,3 +20,23 @@ sources:
             description: 'Row hash over every column except last_update, used to detect changes.'
           - name: last_update
             description: 'When this state was first seen.'
+
+      - name: steampower_specials
+        description: >
+          Daily membership of the discounted set, from the store search with
+          specials=1. Unlike steampower_appid this is an observation log, not a
+          catalog: the date is part of the sorting key, so the same game gives one
+          row per day it was on sale. ReplacingMergeTree over
+          (toDate(last_update), appid, row_hash) makes a re-run of the same day
+          idempotent.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: name
+            description: 'Game title as returned for l=en, carried along so the row reads without a join.'
+          - name: row_hash
+            description: 'Row hash over appid and name.'
+          - name: last_update
+            description: 'Observation timestamp; its date is what makes the row unique per day.'

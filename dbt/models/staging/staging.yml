@@ -47,3 +47,20 @@ models:
         description: 'Row hash over appid and name, used to detect renames.'
       - name: last_update
         description: 'When this state was first seen.'
+
+  - name: stg_steampower_specials
+    description: >
+      Daily membership of the discounted set: one row per game per day it was
+      seen on sale. This is an observation log, so a game appears as many times
+      as it had discounted days - unlike the catalog, where repeats collapse.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+        tests:
+          - not_null
+      - name: name
+        description: 'Game title as returned for l=en.'
+      - name: row_hash
+        description: 'Row hash over appid and name.'
+      - name: last_update
+        description: 'Exact observation timestamp within the day.'
