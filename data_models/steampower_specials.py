@@ -9,7 +9,7 @@ class SteamPowerAppidModel(BaseModel):
 
 class TableConfig:
     schema: str = "raw"
-    table_name: str = "steampower_appid"
-    order_by = ("appid", "row_hash")
+    table_name: str = "steampower_specials"
+    order_by = ("toDate(last_update)", "appid", "row_hash")
     partition_by = "toStartOfMonth(last_update)"
     engine = "ReplacingMergeTree(ver)"
