@@ -1,4 +1,3 @@
-# scripts/gen_ddl.py
 import importlib
 import sys
 from pathlib import Path
