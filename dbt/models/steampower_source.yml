@@ -40,3 +40,54 @@ sources:
             description: 'Row hash over appid and name.'
           - name: last_update
             description: 'Observation timestamp; its date is what makes the row unique per day.'
+
+      - name: steampower_appdetails
+        description: >
+          Per-game card from store /api/appdetails. Slow-changing: descriptions,
+          developers, genres, categories, release date. ReplacingMergeTree over
+          (appid, row_hash) keeps one row per distinct card state.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: success
+            description: 'False when appdetails returned no data (delisted or region-blocked).'
+          - name: row_hash
+            description: 'Row hash over the card fields, used to detect changes.'
+          - name: last_update
+            description: 'When this card state was first seen.'
+
+      - name: steampower_price
+        description: >
+          Price observations from appdetails price_overview. The date is part of
+          the sorting key, so the same game gives one row per day its price was
+          seen - this is the price history contour, separate from the slow card.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: row_hash
+            description: 'Row hash over currency and the price fields.'
+          - name: last_update
+            description: 'Observation timestamp; its date makes the row unique per day.'
+
+      - name: steampower_packages
+        description: >
+          Editions (subs) of a game from appdetails package_groups. One row per
+          package, so packageid is part of the key. ReplacingMergeTree over
+          (appid, packageid, row_hash).
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: packageid
+            description: 'Steam package (edition) identifier.'
+            tests:
+              - not_null
+          - name: row_hash
+            description: 'Row hash over the package fields.'
+          - name: last_update
+            description: 'When this package state was first seen.'

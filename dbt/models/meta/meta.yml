@@ -1,22 +1,12 @@
 models:
-  - name: appid_state
+
+  - name: appid_fetch_details
     description: >
-      Current state of every game: the hash of its latest known snapshot and when
-      that state last changed. Drives the selection of appids that need an
-      appdetails refetch.
+      Queue of appids that need their appdetails fetched next, recomputed on every
+      read - there is no stored cursor. Two branches: games never fetched (anti-join
+      against the details table, capped at 2000, oldest first), and discounted games
+      whose sale status changed today (appear once, or resume after a gap). A game
+      that failed with success=false is treated as fetched so it does not loop.
     columns:
       - name: appid
-        description: 'Steam application identifier, the table key.'
-        tests:
-          - not_null
-          - unique
-      - name: row_hash_cur
-        description: 'Row hash of the latest known state of the game.'
-      - name: is_changed
-        description: >
-          Flag marking that the run_date snapshot differed from the stored state,
-          i.e. the game changed on that run.
-        tests:
-          - not_null
-      - name: last_changed
-        description: 'Timestamp of the snapshot in which the state last changed.'
+        description: 'Steam application identifier to fetch next.'
