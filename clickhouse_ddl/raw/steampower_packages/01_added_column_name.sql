@@ -1,0 +1,1 @@
+ALTER TABLE raw.steampower_packages ADD COLUMN name String;

@@ -2,10 +2,11 @@ import logging
 import re
 import time
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Any
 
 import requests
-from airflow.models import Variable
+from airflow.sdk import Variable
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -23,9 +24,11 @@ class SteamPowerParameterError(Exception):
 class SteamPowerClient:
 
     SEARCH_PATH = "/search/results/"
+    APPDETAILS_PATH = "/api/appdetails/"
     APPID_RE = re.compile(r"/apps/(\d+)/")
     COUNTRY = ""
     LANGUAGE = "en"
+    DATE_FORMATS = ("%b %d, %Y", "%d %b, %Y", "%d %B, %Y", "%B %d, %Y")
 
     def __init__(self, timeout: int) -> None:
         self._base_url = Variable.get("steam_store_base_url").rstrip("/")
@@ -51,6 +54,21 @@ class SteamPowerClient:
             raise SteamPowerConnectionError(f"Steam request failed: {url} params={params}") from exc
 
     @classmethod
+    def _try_date_parse(cls, raw_date: str) -> datetime | None:
+        """Try to parse a date string into a datetime object."""
+        for fmt in cls.DATE_FORMATS:
+            try:
+                return datetime.strptime(raw_date or "", fmt)
+            except ValueError:
+                continue
+        if raw_date:
+            logger.debug(
+                "Steam GET failed to parse date string %s into a datetime object",
+                raw_date,
+            )
+        return None
+
+    @classmethod
     def _parse_search_items(cls, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Pull appid and name out of the search result items."""
         rows: list[dict[str, Any]] = []
@@ -63,6 +81,60 @@ class SteamPowerClient:
             rows.append({"appid": int(match.group(1)), "name": item.get("name") or ""})
         logger.info("Steam search: ok, rows=%s", len(rows))
         return rows
+
+    @classmethod
+    def _build_appdetails_row(cls, appid: int, raw: dict[str, Any]) -> dict[str, Any]:
+        """One raw.steampower_appdetails row out of an /api/appdetails/ entry."""
+        data = raw.get("data") or {}
+        categories = data.get("categories") or []
+        genres = data.get("genres") or []
+        return {
+            "success": raw.get("success", False),
+            "appid": appid,
+            "name": data.get("name", ""),
+            "required_age": data.get("required_age", None),
+            "is_free": data.get("is_free", None),
+            "supported_languages": data.get("supported_languages", ""),
+            "website": data.get("website", ""),
+            "pc_requirements": (data.get("pc_requirements") or {}).get("minimum", ""),
+            "mac_requirements": (data.get("mac_requirements") or {}).get("minimum", ""),
+            "linux_requirements": (data.get("linux_requirements") or {}).get("minimum", ""),
+            "developers": data.get("developers", []),
+            "publishers": data.get("publishers", []),
+            "categories_id": [ctgr_data.get("id") for ctgr_data in categories],
+            "categories_description": [ctgr_data.get("description") for ctgr_data in categories],
+            "genres_id": [genres_data.get("id") for genres_data in genres],
+            "genres_description": [genres_data.get("description") for genres_data in genres],
+            "release_date": cls._try_date_parse((data.get("release_date") or {}).get("date", "")),
+        }
+
+    @classmethod
+    def _build_price_row(cls, appid: int, data: dict[str, Any]) -> dict[str, Any]:
+        """One raw.steampower_price row. price_overview is absent for free apps."""
+        price = data.get("price_overview") or {}
+        return {
+            "appid": appid,
+            "name": data.get("name", ""),
+            "currency": price.get("currency", ""),
+            "price_initial": price.get("initial", None),
+            "price_final": price.get("final", None),
+            "discount_percent": price.get("discount_percent", None),
+        }
+
+    @classmethod
+    def _build_packages_rows(cls, appid: int, data: dict[str, Any]) -> list[dict[str, Any]]:
+        """Flatten package_groups[].subs[] into raw.steampower_packages rows."""
+        return [
+            {
+                "appid": appid,
+                "name": data.get("name", ""),
+                "packageid": pckg_data.get("packageid"),
+                "package_option_text": pckg_data.get("option_text", ""),
+                "package_price_with_discount": pckg_data.get("price_in_cents_with_discount", None),
+            }
+            for group in data.get("package_groups") or []
+            for pckg_data in group.get("subs") or []
+        ]
 
     def steampower_get_total_count(self, category1: int = 998, specials: int = 0) -> int:
         """Get the number of results for a given sort_by and category1."""
@@ -134,3 +206,51 @@ class SteamPowerClient:
                 start=offset, count=count, sort_by=sort_by, specials=specials
             )
             yield rows
+
+    def steampower_get_appdetails(
+        self,
+        delay_seconds: float,
+        appids: list[int],
+        batch_size: int = 500,
+    ) -> Iterator[tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]]:
+        """Read /api/appdetails/ per appid, yielding (appdetails, price, packages) row batches."""
+        if not appids:
+            raise SteamPowerParameterError("appids must not be empty")
+        if min(appids) < 1:
+            raise SteamPowerParameterError(f"appid must be >= 1, got {appids}")
+
+        appdetails_lst: list[dict[str, Any]] = []
+        price_lst: list[dict[str, Any]] = []
+        packages_lst: list[dict[str, Any]] = []
+
+        logger.info("Steam appdetails: reading %s appids, batch_size=%s", len(appids), batch_size)
+
+        for position, appid in enumerate(appids):
+            if position > 0 and delay_seconds:
+                time.sleep(delay_seconds)
+
+            result = self._get(
+                self.APPDETAILS_PATH,
+                {
+                    "appids": appid,
+                    "cc": self.COUNTRY,
+                    "l": self.LANGUAGE,
+                },
+            )
+
+            raw = result.get(str(appid)) or {}
+            data = raw.get("data") or {}
+
+            appdetails_lst.append(self._build_appdetails_row(appid, raw))
+            if raw.get("success"):
+                price_lst.append(self._build_price_row(appid, data))
+                packages_lst.extend(self._build_packages_rows(appid, data))
+            else:
+                logger.warning("Steam appdetails: no data for appid=%s", appid)
+
+            if len(appdetails_lst) >= batch_size:
+                yield appdetails_lst, price_lst, packages_lst
+                appdetails_lst, price_lst, packages_lst = [], [], []
+
+        if appdetails_lst:
+            yield appdetails_lst, price_lst, packages_lst
