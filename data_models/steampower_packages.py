@@ -7,6 +7,7 @@ class SteamPowerPackagesModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     appid: int = Field(ge=0)
+    name:  str | None = Field(default=None)
     packageid: int = Field(ge=0)
     package_option_text: str | None = Field(default=None)
     package_price_with_discount: int | None = Field(default=None, ge=0)  # cents
