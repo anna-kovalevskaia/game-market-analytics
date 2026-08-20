@@ -35,6 +35,7 @@ def get_appids_to_fetch(ch_client: ClickHouseClient) -> list[int]:
     table = ch_client.sql_to_arrow("SELECT appid FROM meta.appid_fetch_details ORDER BY appid")
     return table["appid"].to_pylist()
 
+
 def _steamappdetails_write_to_tmp(
     data: list[BaseModel],
     model: type[BaseModel],
