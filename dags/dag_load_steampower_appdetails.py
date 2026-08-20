@@ -98,7 +98,7 @@ def steampackages_insert_to_clickhouse(run_id_path: str) -> None:
 
 @dag(
     dag_id="steamappdetails_raw_data",
-    schedule="30 0 * * *",
+    schedule="0 */2 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
