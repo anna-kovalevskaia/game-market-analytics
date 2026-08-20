@@ -64,7 +64,7 @@ def steamappdetails_extract_to_tmp(client: SteamPowerClient, run_id_path: Path, 
     )
 
     for page_num, page_rows in enumerate(pages):
-        for rows, (model, table) in zip(page_rows, STREAMS):
+        for rows, (model, table) in zip(page_rows, STREAMS, strict=True):
 
             validate_result = [model(**row) for row in rows]
             logger.info(

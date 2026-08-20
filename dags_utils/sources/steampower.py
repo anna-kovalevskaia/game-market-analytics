@@ -1,12 +1,11 @@
-from datetime import datetime
 import logging
 import re
 import time
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Any
 
 import requests
-
 from airflow.sdk import Variable
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
