@@ -55,9 +55,9 @@ class SteamPowerClient:
             raise SteamPowerConnectionError(f"Steam request failed: {url} params={params}") from exc
 
     @classmethod
-    def _try_date_parse(self, raw_date: str) -> datetime | None:
+    def _try_date_parse(cls, raw_date: str) -> datetime | None:
         """Try to parse a date string into a datetime object."""
-        for fmt in self.DATE_FORMATS:
+        for fmt in cls.DATE_FORMATS:
             try:
                 return datetime.strptime(raw_date or "", fmt)
             except ValueError:
@@ -70,11 +70,11 @@ class SteamPowerClient:
         return None
 
     @classmethod
-    def _parse_search_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _parse_search_items(cls, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Pull appid and name out of the search result items."""
         rows: list[dict[str, Any]] = []
         for item in items:
-            match = self.APPID_RE.search(item.get("logo") or "")
+            match = cls.APPID_RE.search(item.get("logo") or "")
             if match is None:
                 # /subs/ and /bundles/ links carry no appid — skip, but say so.
                 logger.warning("Steam search: no appid in logo, name=%r", item.get("name"))
@@ -84,7 +84,7 @@ class SteamPowerClient:
         return rows
 
     @classmethod
-    def _build_appdetails_row(self, appid: int, raw: dict[str, Any]) -> dict[str, Any]:
+    def _build_appdetails_row(cls, appid: int, raw: dict[str, Any]) -> dict[str, Any]:
         """One raw.steampower_appdetails row out of an /api/appdetails/ entry."""
         data = raw.get("data") or {}
         categories = data.get("categories") or []
@@ -106,11 +106,11 @@ class SteamPowerClient:
             "categories_description": [ctgr_data.get("description") for ctgr_data in categories],
             "genres_id": [genres_data.get("id") for genres_data in genres],
             "genres_description": [genres_data.get("description") for genres_data in genres],
-            "release_date": self._try_date_parse((data.get("release_date") or {}).get("date", "")),
+            "release_date": cls._try_date_parse((data.get("release_date") or {}).get("date", "")),
         }
 
     @classmethod
-    def _build_price_row(self, appid: int, data: dict[str, Any]) -> dict[str, Any]:
+    def _build_price_row(cls, appid: int, data: dict[str, Any]) -> dict[str, Any]:
         """One raw.steampower_price row. price_overview is absent for free apps."""
         price = data.get("price_overview") or {}
         return {
@@ -123,7 +123,7 @@ class SteamPowerClient:
         }
 
     @classmethod
-    def _build_packages_rows(self, appid: int, data: dict[str, Any]) -> list[dict[str, Any]]:
+    def _build_packages_rows(cls, appid: int, data: dict[str, Any]) -> list[dict[str, Any]]:
         """Flatten package_groups[].subs[] into raw.steampower_packages rows."""
         return [
             {
