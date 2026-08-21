@@ -228,15 +228,18 @@ class SteamPowerClient:
         for position, appid in enumerate(appids):
             if position > 0 and delay_seconds:
                 time.sleep(delay_seconds)
-
-            result = self._get(
-                self.APPDETAILS_PATH,
-                {
-                    "appids": appid,
-                    "cc": self.COUNTRY,
-                    "l": self.LANGUAGE,
-                },
-            )
+            try:
+                result = self._get(
+                    self.APPDETAILS_PATH,
+                    {
+                        "appids": appid,
+                        "cc": self.COUNTRY,
+                        "l": self.LANGUAGE,
+                    },
+                )
+            except SteamPowerConnectionError:
+                logger.warning("Steam appdetails: giving up on appid=%s", appid)
+                appdetails_lst.append(self._build_appdetails_row(appid, {}))
 
             raw = result.get(str(appid)) or {}
             data = raw.get("data") or {}
