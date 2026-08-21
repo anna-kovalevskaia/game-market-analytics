@@ -9,8 +9,8 @@ from cosmos.constants import ExecutionMode
 from pendulum import datetime
 
 from dags_utils.commons.assets import table_asset
-from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
 from data_models.steampower_appdetails import TableConfig as SteamPowerDetailsTable
+from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
 from data_models.steampower_specials import TableConfig as SteamPowerSpecialsTable
 from data_models.steamspy_all import TableConfig as SteamSpyAllTable
 
