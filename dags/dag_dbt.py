@@ -3,13 +3,14 @@
 import os
 from pathlib import Path
 
-from airflow.sdk import AssetAny
+from airflow.sdk import AssetAll
 from cosmos import DbtDag, ExecutionConfig, ProfileConfig, ProjectConfig, RenderConfig
 from cosmos.constants import ExecutionMode
 from pendulum import datetime
 
 from dags_utils.commons.assets import table_asset
 from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
+from data_models.steampower_appdetails import TableConfig as SteamPowerDetailsTable
 from data_models.steampower_specials import TableConfig as SteamPowerSpecialsTable
 from data_models.steamspy_all import TableConfig as SteamSpyAllTable
 
@@ -35,10 +36,11 @@ dbt_dag = DbtDag(
             )
         }
     },
-    schedule=AssetAny(
+    schedule=AssetAll(
         table_asset(SteamSpyAllTable),
         table_asset(SteamPowerAppidTable),
         table_asset(SteamPowerSpecialsTable),
+        table_asset(SteamPowerDetailsTable),
     ),
     start_date=datetime(2026, 1, 1),
     catchup=False,

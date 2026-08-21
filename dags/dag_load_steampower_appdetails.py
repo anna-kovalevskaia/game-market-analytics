@@ -62,7 +62,7 @@ def steamappdetails_insert_to_clickhouse(run_id_path: str) -> None:
     )
 
 
-@task(outlets=[table_asset(SteamPowerPriceTable)])
+@task
 def steamprice_insert_to_clickhouse(run_id_path: str) -> None:
 
     ctx = get_current_context()
@@ -79,7 +79,7 @@ def steamprice_insert_to_clickhouse(run_id_path: str) -> None:
     )
 
 
-@task(outlets=[table_asset(SteamPowerPackagesTable)])
+@task
 def steampackages_insert_to_clickhouse(run_id_path: str) -> None:
 
     ctx = get_current_context()
