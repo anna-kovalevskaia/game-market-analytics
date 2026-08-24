@@ -73,6 +73,29 @@ sources:
           - name: last_update
             description: 'Observation timestamp; its date makes the row unique per day.'
 
+      - name: steampower_active_users
+        description: >
+          Concurrent player counts from GetNumberOfCurrentPlayers. An observation
+          log rather than a catalog: the hour is part of the sorting key, so the
+          same game gives one row per hour it was polled. ReplacingMergeTree over
+          (toStartOfHour(last_update), appid, row_hash) makes a re-run within the
+          same hour idempotent.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: name
+            description: 'Game title, carried along so the row reads without a join.'
+          - name: player_count
+            description: 'Players in game at the moment of the poll.'
+            tests:
+              - not_null
+          - name: row_hash
+            description: 'Row hash over appid, name and player_count.'
+          - name: last_update
+            description: 'Observation timestamp; its hour is what makes the row unique per poll.'
+
       - name: steampower_packages
         description: >
           Editions (subs) of a game from appdetails package_groups. One row per

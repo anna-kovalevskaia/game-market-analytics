@@ -64,3 +64,25 @@ models:
         description: 'Row hash over appid and name.'
       - name: last_update
         description: 'Exact observation timestamp within the day.'
+
+  - name: stg_steampower_active_users
+    description: >
+      Hourly concurrent player counts: one row per game per hour it was polled.
+      This is an observation log, so a game appears as many times as it was
+      measured - unlike the catalog, where repeats collapse. Repeated polls
+      within the same hour that return the same count collapse to one row.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+        tests:
+          - not_null
+      - name: name
+        description: 'Game title.'
+      - name: player_count
+        description: 'Players in game at the moment of the poll.'
+        tests:
+          - not_null
+      - name: row_hash
+        description: 'Row hash over appid, name and player_count.'
+      - name: last_update
+        description: 'Exact observation timestamp within the hour.'
