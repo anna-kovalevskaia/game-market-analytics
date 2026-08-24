@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Any
 
 import clickhouse_connect
 import polars as pl
@@ -47,6 +48,19 @@ class ClickHouseClient:
     def insert_polars_to_ch(self, schema: str, table_name: str, pl_df: pl.DataFrame) -> None:
         """Insert polars DataFrame to ClickHouse table."""
         self._client.insert(f"{schema}.{table_name}", pl_df.rows(), column_names=pl_df.columns)
+
+    def insert_list_to_ch(self, schema: str, table_name: str, data: list[dict[str, Any]]) -> None:
+        """Insert dict rows into a ClickHouse table."""
+        if not data:
+            logger.warning("no rows to insert into %s.%s", schema, table_name)
+            return
+
+        columns = list(data[0])
+        self._client.insert(
+            f"{schema}.{table_name}",
+            [[row[col] for col in columns] for row in data],
+            column_names=columns,
+        )
 
     def insert_parquet_to_ch_batch(
         self, schema: str, table_name: str, dir_path: str | Path, batch_size: int

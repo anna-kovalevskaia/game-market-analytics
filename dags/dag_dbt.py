@@ -12,7 +12,6 @@ from dags_utils.commons.assets import table_asset
 from data_models.steampower_appdetails import TableConfig as SteamPowerDetailsTable
 from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
 from data_models.steampower_specials import TableConfig as SteamPowerSpecialsTable
-from data_models.steamspy_all import TableConfig as SteamSpyAllTable
 
 DBT_DIR = Path(__file__).resolve().parents[1] / "dbt"  # dbt/ sits next to dags/ in both envs
 DBT_BIN = os.getenv("DBT_EXECUTABLE_PATH")  # image: dbt_venv/bin/dbt, CI: dbt from PATH
@@ -37,7 +36,6 @@ dbt_dag = DbtDag(
         }
     },
     schedule=AssetAll(
-        table_asset(SteamSpyAllTable),
         table_asset(SteamPowerAppidTable),
         table_asset(SteamPowerSpecialsTable),
         table_asset(SteamPowerDetailsTable),

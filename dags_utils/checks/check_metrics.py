@@ -62,7 +62,7 @@ def fetch_previous_metrics(
     metric_names = [check.COUNT_METRIC, *check.MEDIAN_COLUMNS]
     metrics_list = ", ".join(f"'{name}'" for name in metric_names)
 
-    previous = pl.from_arrow(client.sql_to_arrow(f"""
+    previous = client.sql_to_arrow(f"""
             WITH (
                 SELECT max(last_update)
                 FROM {raw_dq.schema}.{raw_dq.table_name}
@@ -79,9 +79,15 @@ def fetch_previous_metrics(
                  AND table_name = '{raw.table_name}'
             WHERE toDate(last_update) = last_check
               AND metrics_name IN ({metrics_list})
-            """))
+            """)
 
-    return dict(previous.iter_rows())
+    return dict(
+        zip(
+            previous["metrics_name"].to_pylist(),
+            previous["metrics_value"].to_pylist(),
+            strict=True,
+        )
+    )
 
 
 def compare_metrics(
