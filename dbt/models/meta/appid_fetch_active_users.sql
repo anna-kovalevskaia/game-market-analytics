@@ -12,7 +12,6 @@ appids AS (-- appid can have both 0 & 1 values. We want only the last ones.
     GROUP BY appid
     HAVING argMax(success, last_update)=1
     ORDER BY max(last_update) DESC, appid
-    LIMIT 2000 -- to incremental update and avoid too many requests and time limit
 ),
 players AS (
     SELECT appid
@@ -21,6 +20,13 @@ players AS (
     ORDER BY argMax(player_count, last_update) DESC
     LIMIT 500 -- to incremental update and avoid too many requests and time limit
 )
-SELECT a.appid
-FROM appids AS a
-LEFT ANTI JOIN players AS p USING (appid)
+SELECT appid
+FROM appids
+LEFT ANTI JOIN players
+USING (appid)
+LIMIT 2000 -- to incremental update and avoid too many requests and time limit
+
+UNION ALL
+
+SELECT appid
+FROM players

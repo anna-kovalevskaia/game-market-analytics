@@ -9,6 +9,7 @@ from cosmos.constants import ExecutionMode
 from pendulum import datetime
 
 from dags_utils.commons.assets import table_asset
+from data_models.steampower_active_users import TableConfig as ISteamPlayersTable
 from data_models.steampower_appdetails import TableConfig as SteamPowerDetailsTable
 from data_models.steampower_appid import TableConfig as SteamPowerAppidTable
 from data_models.steampower_specials import TableConfig as SteamPowerSpecialsTable
@@ -39,6 +40,7 @@ dbt_dag = DbtDag(
         table_asset(SteamPowerAppidTable),
         table_asset(SteamPowerSpecialsTable),
         table_asset(SteamPowerDetailsTable),
+        table_asset(ISteamPlayersTable),
     ),
     start_date=datetime(2026, 1, 1),
     catchup=False,
