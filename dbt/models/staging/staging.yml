@@ -86,3 +86,28 @@ models:
         description: 'Row hash over appid, name and player_count.'
       - name: last_update
         description: 'Exact observation timestamp within the hour.'
+
+  - name: stg_steampower_appreviews
+    description: >
+      Deduplicated review summaries: one row per unique (appid, row_hash) pair,
+      so repeated observations of an unchanged summary collapse while every
+      change in the review counts stays as its own version.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+        tests:
+          - not_null
+      - name: review_score
+        description: 'Steam review score, 0-9.'
+      - name: review_score_desc
+        description: 'Human-readable label of the score, e.g. "Very Positive".'
+      - name: total_positive
+        description: 'Number of positive reviews at the moment of the observation.'
+      - name: total_negative
+        description: 'Number of negative reviews at the moment of the observation.'
+      - name: total_reviews
+        description: 'Total number of reviews at the moment of the observation.'
+      - name: row_hash
+        description: 'Row hash over the review fields, used to detect changes.'
+      - name: last_update
+        description: 'When this summary state was first seen.'

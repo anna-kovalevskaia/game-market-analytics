@@ -73,6 +73,33 @@ sources:
           - name: last_update
             description: 'Observation timestamp; its date makes the row unique per day.'
 
+      - name: steampower_appreviews
+        description: >
+          Review summary per game from the store review endpoint: score, its
+          label, and the positive/negative/total counts. ReplacingMergeTree over
+          (appid, row_hash) keeps one row per distinct summary state, so the
+          table doubles as the review growth contour - counts change on almost
+          every observation, while a stale game collapses to a single row.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+            tests:
+              - not_null
+          - name: review_score
+            description: 'Steam review score, 0-9.'
+          - name: review_score_desc
+            description: 'Human-readable label of the score, e.g. "Very Positive".'
+          - name: total_positive
+            description: 'Number of positive reviews at the moment of the observation.'
+          - name: total_negative
+            description: 'Number of negative reviews at the moment of the observation.'
+          - name: total_reviews
+            description: 'Total number of reviews at the moment of the observation.'
+          - name: row_hash
+            description: 'Row hash over the review fields, used to detect changes.'
+          - name: last_update
+            description: 'When this summary state was first seen.'
+
       - name: steampower_active_users
         description: >
           Concurrent player counts from GetNumberOfCurrentPlayers. An observation
