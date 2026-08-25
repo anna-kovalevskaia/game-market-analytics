@@ -25,7 +25,9 @@ class SteamPowerClient:
 
     SEARCH_PATH = "/search/results/"
     APPDETAILS_PATH = "/api/appdetails/"
+    REVIEWS_PATH = "/appreviews/"
     APPID_RE = re.compile(r"/apps/(\d+)/")
+    REVIEWS_PER_PAGE = 0
     COUNTRY = ""
     LANGUAGE = "en"
     DATE_FORMATS = ("%b %d, %Y", "%d %b, %Y", "%d %B, %Y", "%B %d, %Y")
@@ -257,3 +259,52 @@ class SteamPowerClient:
 
         if appdetails_lst:
             yield appdetails_lst, price_lst, packages_lst
+
+    def steampower_get_appreviews(
+        self,
+        delay_seconds: float,
+        appids: list[int],
+        batch_size: int = 500,
+    ) -> Iterator[list[dict[str, Any]]]:
+        """Read /appreviews/"""
+        if not appids:
+            raise SteamPowerParameterError("appids must not be empty")
+        if min(appids) < 1:
+            raise SteamPowerParameterError(f"appid must be >= 1, got {appids}")
+
+        appreviews_lst: list[dict[str, Any]] = []
+
+        logger.info("Steam appreviews: reading %s appids, batch_size=%s", len(appids), batch_size)
+
+        for position, appid in enumerate(appids):
+            if position > 0 and delay_seconds:
+                time.sleep(delay_seconds)
+
+            result = self._get(
+                self.REVIEWS_PATH + str(appid),
+                {
+                    "json": 1,
+                    "cc": self.COUNTRY,
+                    "l": self.LANGUAGE,
+                    "num_per_page": self.REVIEWS_PER_PAGE,
+                },
+            )
+
+            query_summary = result.get("query_summary", {})
+            appreviews_lst.append(
+                {
+                    "appid": appid,
+                    "review_score": query_summary.get("review_score", None),
+                    "review_score_desc": query_summary.get("review_score_desc", None),
+                    "total_positive": query_summary.get("total_positive", None),
+                    "total_negative": query_summary.get("total_negative", None),
+                    "total_reviews": query_summary.get("total_reviews", None),
+                }
+            )
+
+            if len(appreviews_lst) >= batch_size:
+                yield appreviews_lst
+                appreviews_lst = []
+
+        if appreviews_lst:
+            yield appreviews_lst

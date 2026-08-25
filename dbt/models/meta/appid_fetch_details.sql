@@ -21,6 +21,12 @@ specials AS (
         sp.appid                AS appid,
         toDate(sp.last_update, 'UTC')  AS last_upd
     FROM {{ ref('stg_steampower_specials') }} AS sp
+    LEFT ANTI JOIN (-- Skip specials appids whose price was already refreshed today
+        SELECT appid
+        FROM {{ ref('stg_steampower_price') }}
+        WHERE toDate(last_update, 'UTC') = toDate('{{ airflow_run_date() }}', 'UTC')
+    ) as pr
+        ON sp.appid = pr.appid
     LEFT ANY JOIN appids AS ap
         ON ap.appid = sp.appid
     WHERE ap.success OR ap.appid = 0
