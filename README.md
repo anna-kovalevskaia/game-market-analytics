@@ -2,7 +2,7 @@
 
 # Game Market Analytics System (via Open-Source Data)
 
-An analytical system for researching the gaming market based on open-source data. Built as an end-to-end data platform: from raw API ingestion to interactive dashboards updated daily.
+An analytical system for researching the gaming market based on open-source data. Built as an end-to-end data platform, from raw API ingestion to interactive dashboards updated daily. Work in progress: the ingestion and staging layers are running, the analytical layers are not built yet - see [Development Roadmap](#development-roadmap) for what is done and what is next.
 
 ## Contents
 
@@ -34,13 +34,14 @@ Investigate historical data from the gaming industry and analyze how popularity 
 
 ## Data Sources
 
-### Phase 1 - MVP (current)
+### Phase 1 - MVP (in progress)
 
-| Source | What it provides | Why |
-|---|---|---|
-| Steam Web API / Store API | Game metadata, price tiers, CCU | Official, stable, free |
-| IGDB API | Structured genre classification, critic ratings | Steam tags are unstructured; IGDB provides clean taxonomy |
-| Twitch API | Viewing hours, stream engagement | Measures media weight of game titles |
+| Source | Status | What it provides | Why |
+|---|---|---|---|
+| Steam Store API | done | Catalog, game cards, prices, editions, discounts, user tags, review summaries | Official, stable, free |
+| Steam Web API | done | Concurrent players per game | Official, stable, free |
+| Twitch API | next | Viewing hours, stream engagement | Measures media weight of game titles |
+| IGDB API | planned | Structured genre classification, critic ratings | Steam tags are unstructured; IGDB provides clean taxonomy |
 
 
 ## Tech Stack
@@ -86,10 +87,17 @@ All heavy computation (ETL, dbt materializations, columnar compression) runs loc
 
 ## Development Roadmap
 
-**Phase 1 - Local-First MVP** <- current
-- Steam API + IGDB + Twitch -> ClickHouse
-- Airflow DAGs with daily schedule, retries, alerting
-- dbt models: staging -> core -> marts
+**Phase 1 - Local-First MVP** <- in progress
+
+Done:
+- Steam Store API + Steam Web API -> ClickHouse
+- Airflow DAGs with their own schedules, retries and self-refreshing work queues
+- Data quality layer: metrics per load, drift thresholds, metrics history in ClickHouse
+- dbt staging models over every raw table, plus meta views that decide what to fetch next
+
+Next:
+- Twitch and IGDB ingestion
+- dbt core and marts layers
 - Google Sheets as cloud buffer
 - Tableau Public with automatic daily refresh
 

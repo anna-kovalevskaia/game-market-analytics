@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import time
@@ -22,11 +23,12 @@ class SteamPowerParameterError(Exception):
 
 
 class SteamPowerClient:
-
     SEARCH_PATH = "/search/results/"
     APPDETAILS_PATH = "/api/appdetails/"
     REVIEWS_PATH = "/appreviews/"
+    TAG_PATH = "/app/"
     APPID_RE = re.compile(r"/apps/(\d+)/")
+    APPTAG_RE = re.compile(r"InitAppTagModal\(\s*\d+\s*,\s*(\[.*?\])\s*,", re.S)
     REVIEWS_PER_PAGE = 0
     COUNTRY = ""
     LANGUAGE = "en"
@@ -52,6 +54,17 @@ class SteamPowerClient:
             response = self._session.get(url, params=params, timeout=self._timeout)
             response.raise_for_status()
             return response.json()
+        except requests.RequestException as exc:
+            raise SteamPowerConnectionError(f"Steam request failed: {url} params={params}") from exc
+
+    def _get_text(self, path: str, params: dict[str, Any]) -> str:
+        """Same as _get, but for store pages: they answer with HTML, not JSON."""
+        url = f"{self._base_url}{path}"
+        logger.info("Steam GET %s params=%s", url, params)
+        try:
+            response = self._session.get(url, params=params, timeout=self._timeout)
+            response.raise_for_status()
+            return response.text
         except requests.RequestException as exc:
             raise SteamPowerConnectionError(f"Steam request failed: {url} params={params}") from exc
 
@@ -136,6 +149,33 @@ class SteamPowerClient:
             }
             for group in data.get("package_groups") or []
             for pckg_data in group.get("subs") or []
+        ]
+
+    @classmethod
+    def _build_appreviews_row(cls, appid: int, data: dict[str, Any]) -> dict[str, Any]:
+        """One raw.steampower_appreviews row out of the /appreviews/ query_summary."""
+        query_summary = data.get("query_summary") or {}
+        return {
+            "appid": appid,
+            "review_score": query_summary.get("review_score", None),
+            "review_score_desc": query_summary.get("review_score_desc", None),
+            "total_positive": query_summary.get("total_positive", None),
+            "total_negative": query_summary.get("total_negative", None),
+            "total_reviews": query_summary.get("total_reviews", None),
+        }
+
+    @classmethod
+    def _build_apptag_rows(cls, appid: int, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """One raw.steampower_apptag row per user tag of the game."""
+        return [
+            {
+                "appid": appid,
+                "tagid": row.get("tagid", None),
+                "tag_name": row.get("name", None),
+                "count": row.get("count", None),
+                "browseable": row.get("browseable", None),
+            }
+            for row in data
         ]
 
     def steampower_get_total_count(self, category1: int = 998, specials: int = 0) -> int:
@@ -242,6 +282,7 @@ class SteamPowerClient:
             except SteamPowerConnectionError:
                 logger.warning("Steam appdetails: giving up on appid=%s", appid)
                 appdetails_lst.append(self._build_appdetails_row(appid, {}))
+                continue
 
             raw = result.get(str(appid)) or {}
             data = raw.get("data") or {}
@@ -290,17 +331,7 @@ class SteamPowerClient:
                 },
             )
 
-            query_summary = result.get("query_summary", {})
-            appreviews_lst.append(
-                {
-                    "appid": appid,
-                    "review_score": query_summary.get("review_score", None),
-                    "review_score_desc": query_summary.get("review_score_desc", None),
-                    "total_positive": query_summary.get("total_positive", None),
-                    "total_negative": query_summary.get("total_negative", None),
-                    "total_reviews": query_summary.get("total_reviews", None),
-                }
-            )
+            appreviews_lst.append(self._build_appreviews_row(appid, result))
 
             if len(appreviews_lst) >= batch_size:
                 yield appreviews_lst
@@ -308,3 +339,48 @@ class SteamPowerClient:
 
         if appreviews_lst:
             yield appreviews_lst
+
+    def steampower_get_apptag(
+        self,
+        delay_seconds: float,
+        appids: list[int],
+        batch_size: int = 500,
+    ) -> Iterator[list[dict[str, Any]]]:
+        """Read the user tags embedded in the store page /app/<appid>/."""
+        if not appids:
+            raise SteamPowerParameterError("appids must not be empty")
+        if min(appids) < 1:
+            raise SteamPowerParameterError(f"appid must be >= 1, got {appids}")
+
+        apptag_lst: list[dict[str, Any]] = []
+        updated_appids: list[dict[str, Any]] = []
+
+        logger.info("Steam app tag: reading %s appids, batch_size=%s", len(appids), batch_size)
+
+        for position, appid in enumerate(appids):
+            if position > 0 and delay_seconds:
+                time.sleep(delay_seconds)
+            try:
+                page = self._get_text(
+                    self.TAG_PATH + str(appid),
+                    {
+                        "cc": self.COUNTRY,
+                        "l": self.LANGUAGE,
+                    },
+                )
+
+                match = self.APPTAG_RE.search(page)
+                tags = json.loads(match.group(1)) if match else [{}]
+            except (SteamPowerConnectionError, json.JSONDecodeError):
+                logger.warning("Steam app tag: no tags for appid=%s", appid)
+                tags = [{}]
+
+            apptag_lst.extend(self._build_apptag_rows(appid, tags))
+            updated_appids.append(appid)
+            if len(updated_appids) >= batch_size:
+                yield apptag_lst
+                apptag_lst = []
+                updated_appids = []
+
+        if apptag_lst:
+            yield apptag_lst
