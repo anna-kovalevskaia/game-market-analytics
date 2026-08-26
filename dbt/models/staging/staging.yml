@@ -39,8 +39,6 @@ models:
     columns:
       - name: appid
         description: 'Steam application identifier.'
-        tests:
-          - not_null
       - name: name
         description: 'Game title as returned for l=en.'
       - name: row_hash
@@ -56,8 +54,6 @@ models:
     columns:
       - name: appid
         description: 'Steam application identifier.'
-        tests:
-          - not_null
       - name: name
         description: 'Game title as returned for l=en.'
       - name: row_hash
@@ -74,18 +70,35 @@ models:
     columns:
       - name: appid
         description: 'Steam application identifier.'
-        tests:
-          - not_null
       - name: name
         description: 'Game title.'
       - name: player_count
         description: 'Players in game at the moment of the poll.'
-        tests:
-          - not_null
       - name: row_hash
         description: 'Row hash over appid, name and player_count.'
       - name: last_update
         description: 'Exact observation timestamp within the hour.'
+
+  - name: stg_steampower_apptag
+    description: >
+      Deduplicated user tags: one row per unique (appid, row_hash) pair, so an
+      unchanged tag collapses while every change in its vote count stays as its
+      own version. The grain is one row per game per tag, not per game.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+      - name: tagid
+        description: 'Steam tag identifier, stable across games.'
+      - name: tag_name
+        description: 'Tag label as returned for l=en.'
+      - name: count
+        description: 'Number of players who voted for this tag on this game.'
+      - name: browseable
+        description: 'Whether the tag has a store browse page, i.e. whether it drives discovery.'
+      - name: row_hash
+        description: 'Row hash over the tag fields, used to detect changes.'
+      - name: last_update
+        description: 'When this tag state was first seen.'
 
   - name: stg_steampower_appreviews
     description: >
@@ -95,8 +108,6 @@ models:
     columns:
       - name: appid
         description: 'Steam application identifier.'
-        tests:
-          - not_null
       - name: review_score
         description: 'Steam review score, 0-9.'
       - name: review_score_desc

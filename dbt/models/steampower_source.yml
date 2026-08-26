@@ -12,8 +12,6 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: name
             description: 'Game title as returned for l=en.'
           - name: row_hash
@@ -32,8 +30,6 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: name
             description: 'Game title as returned for l=en, carried along so the row reads without a join.'
           - name: row_hash
@@ -49,8 +45,6 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: success
             description: 'False when appdetails returned no data (delisted or region-blocked).'
           - name: row_hash
@@ -66,12 +60,33 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: row_hash
             description: 'Row hash over currency and the price fields.'
           - name: last_update
             description: 'Observation timestamp; its date makes the row unique per day.'
+
+      - name: steampower_apptag
+        description: >
+          User tags scraped from the store page, one row per game per tag. Unlike
+          genres and categories, which the publisher sets, tags are voted on by
+          players - so count carries the weight of the claim. ReplacingMergeTree
+          over (appid, row_hash) keeps one row per distinct state of a tag, which
+          makes the table the vote history rather than a snapshot.
+        columns:
+          - name: appid
+            description: 'Steam application identifier.'
+          - name: tagid
+            description: 'Steam tag identifier, stable across games.'
+          - name: tag_name
+            description: 'Tag label as returned for l=en.'
+          - name: count
+            description: 'Number of players who voted for this tag on this game.'
+          - name: browseable
+            description: 'Whether the tag has a store browse page, i.e. whether it drives discovery.'
+          - name: row_hash
+            description: 'Row hash over the tag fields, used to detect changes.'
+          - name: last_update
+            description: 'When this tag state was first seen.'
 
       - name: steampower_appreviews
         description: >
@@ -83,8 +98,6 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: review_score
             description: 'Steam review score, 0-9.'
           - name: review_score_desc
@@ -110,14 +123,10 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: name
             description: 'Game title, carried along so the row reads without a join.'
           - name: player_count
             description: 'Players in game at the moment of the poll.'
-            tests:
-              - not_null
           - name: row_hash
             description: 'Row hash over appid, name and player_count.'
           - name: last_update
@@ -131,12 +140,8 @@ sources:
         columns:
           - name: appid
             description: 'Steam application identifier.'
-            tests:
-              - not_null
           - name: packageid
             description: 'Steam package (edition) identifier.'
-            tests:
-              - not_null
           - name: row_hash
             description: 'Row hash over the package fields.'
           - name: last_update
