@@ -122,3 +122,44 @@ models:
         description: 'Row hash over the review fields, used to detect changes.'
       - name: last_update
         description: 'When this summary state was first seen.'
+
+  - name: stg_steampower_appreviews_details
+    description: >
+      Deduplicated individual reviews: one row per unique (appid, row_hash) pair.
+      The grain is one row per review version, not per review - an edited review
+      keeps its original timestamp_created and arrives as an additional row, so
+      the table holds the edit history. Since no identity field is stored,
+      (appid, timestamp_created) is what groups the versions of one review.
+    columns:
+      - name: appid
+        description: 'Steam application identifier.'
+      - name: timestamp_created
+        description: 'When the review was first published; unchanged by later edits.'
+      - name: timestamp_updated
+        description: 'When the review was last edited; equal to timestamp_created if never edited.'
+      - name: voted_up
+        description: 'Whether the review recommends the game.'
+      - name: language
+        description: 'Language the review was written in.'
+      - name: steam_purchase
+        description: 'Whether the reviewer bought the game on Steam rather than activating a key.'
+      - name: received_for_free
+        description: 'Whether the reviewer got the game for free.'
+      - name: written_during_early_access
+        description: 'Whether the review was written while the game was in Early Access.'
+      - name: refunded
+        description: 'Whether the reviewer later refunded the game.'
+      - name: primarily_steam_deck
+        description: 'Whether the reviewer played mostly on Steam Deck.'
+      - name: playtime_at_review
+        description: 'Minutes played when the review was written; trust it only where timestamp_updated equals timestamp_created.'
+      - name: playtime_forever
+        description: 'Minutes played in total at the moment of the observation.'
+      - name: playtime_last_two_weeks
+        description: 'Minutes played in the two weeks before the observation.'
+      - name: last_played
+        description: 'When the reviewer last launched the game.'
+      - name: row_hash
+        description: 'Row hash over the review fields, used to detect edits.'
+      - name: last_update
+        description: 'When this review state was first seen.'
