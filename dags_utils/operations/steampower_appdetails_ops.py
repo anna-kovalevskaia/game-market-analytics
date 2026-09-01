@@ -32,8 +32,11 @@ class IterArguments(BaseModel):
     batch_size: int
 
 
-def get_appids_to_fetch(ch_client: ClickHouseClient) -> list[int]:
+def get_appids_to_fetch(ch_client: ClickHouseClient) -> list[int] | None:
     table = ch_client.sql_to_arrow("SELECT appid FROM meta.appid_fetch_details ORDER BY appid")
+    if not table:
+        logger.warning("No appids to fetch.")
+        return None
     return table["appid"].to_pylist()
 
 

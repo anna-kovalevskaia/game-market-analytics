@@ -10,8 +10,18 @@ from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.commons.model_types import model_to_polars_schema
 from dags_utils.sources.steampower import SteamPowerClient
 from data_models.steampower_appreviews import SteamPowerAppreviews
+from data_models.steampower_appreviews import TableConfig as SteamPowerAppreviewsTable
+from data_models.steampower_appreviews_details import SteamPowerAppReviewDetailsModel
+from data_models.steampower_appreviews_details import (
+    TableConfig as SteamPowerAppreviewsDetailsTable,
+)
 
 logger = logging.getLogger(__name__)
+
+STREAMS: tuple[tuple[type[BaseModel], type], ...] = (
+    (SteamPowerAppreviews, SteamPowerAppreviewsTable),
+    (SteamPowerAppReviewDetailsModel, SteamPowerAppreviewsDetailsTable),
+)
 
 
 class IterArguments(BaseModel):
@@ -25,11 +35,15 @@ def get_appids_to_fetch(ch_client: ClickHouseClient) -> list[int]:
     return table["appid"].to_pylist()
 
 
-def _steamappreviews_write_to_tmp(data: list[BaseModel], full_file_path: Path) -> None:
-    """Write one page of player counts to a temporary parquet file."""
+def _steamappreviews_write_to_tmp(
+    data: list[BaseModel],
+    model: type[BaseModel],
+    full_file_path: Path,
+) -> None:
+    """Write one Steam appreviews stream to a temporary parquet file."""
     models = [row.model_dump() for row in data]
 
-    df = pl.DataFrame(models, schema=model_to_polars_schema(SteamPowerAppreviews))
+    df = pl.DataFrame(models, schema=model_to_polars_schema(model))
     df.write_parquet(full_file_path)
 
 
@@ -38,9 +52,10 @@ def steamappreviews_extract_to_tmp(client: SteamPowerClient, run_id_path: Path, 
     """Validate Appreviews col types"""
     """Write Appreviews data to a temporary file."""
 
-    run_id_path.mkdir(parents=True, exist_ok=True)
-
     iter_args = IterArguments(**kwargs)
+
+    for _, table in STREAMS:
+        (run_id_path / table.table_name).mkdir(parents=True, exist_ok=True)
 
     pages = client.steampower_get_appreviews(
         iter_args.delay_seconds,
@@ -49,15 +64,21 @@ def steamappreviews_extract_to_tmp(client: SteamPowerClient, run_id_path: Path, 
     )
 
     for page_num, page_rows in enumerate(pages):
-        validate_result = [SteamPowerAppreviews(**row) for row in page_rows]
-        logger.info("Appreviews validated page=%s records=%s", page_num, len(validate_result))
+        for rows, (model, table) in zip(page_rows, STREAMS, strict=True):
+            validate_result = [model(**row) for row in rows]
+            logger.info(
+                "Appreviews validated page=%s table=%s records=%s",
+                page_num,
+                table.table_name,
+                len(validate_result),
+            )
 
-        full_file_path = run_id_path / f"page_{page_num}.parquet"
-        _steamappreviews_write_to_tmp(validate_result, full_file_path)
-        logger.info("Appreviews written page - %s", page_num)
+            full_file_path = run_id_path / table.table_name / f"page_{page_num}.parquet"
+            _steamappreviews_write_to_tmp(validate_result, model, full_file_path)
+            logger.info("Appreviews written %s to %s", page_num, table.table_name)
 
 
-def steamappreviews_parquet_to_clickhouse(
+def steamappreviews_metrics_validate(
     client: ClickHouseClient,
     run_id_path: Path,
     raw: type,
@@ -65,23 +86,30 @@ def steamappreviews_parquet_to_clickhouse(
     check: Check | None,
     cur_date: str,
     dag_id: str,
-    batch_size: int,
+) -> list[dict]:
+    """Validate the staged values"""
+    if not check:
+        return []
+    metrics = check_metrics(run_id_path, client, raw, raw_dq, check, cur_date, dag_id)
+    return metrics.to_dicts()
+
+
+def steamappreviews_parquet_to_clickhouse(
+    client: ClickHouseClient, run_id_path: Path, batch_size: int, raw: type
 ) -> None:
-    """
-    Validate the staged values
-    Insert the staged values in batches.
-    Record the DQ metrics, then drop the staged files.
-    """
-    metrics = (
-        check_metrics(run_id_path, client, raw, raw_dq, check, cur_date, dag_id) if check else None
-    )
+    """Insert them in batches, record the DQ metrics."""
 
     client.insert_parquet_to_ch_batch(raw.schema, raw.table_name, run_id_path, batch_size)
 
-    if metrics is not None:
-        client.insert_list_to_ch(raw_dq.schema, raw_dq.table_name, metrics.to_dicts())
+
+def steamappreviews_update_raw_dq(
+    client: ClickHouseClient, run_id_path: Path, raw_dq: type, metrics: list[dict]
+) -> None:
+    """Record the DQ metrics of every stream, then drop the staged files."""
+    if metrics:
+        client.insert_list_to_ch(raw_dq.schema, raw_dq.table_name, metrics)
         logger.info(
-            "Appreviews active users %s.%s was updated by %s rows",
+            "Appreviews %s.%s was updated by %s rows",
             raw_dq.schema,
             raw_dq.table_name,
             len(metrics),

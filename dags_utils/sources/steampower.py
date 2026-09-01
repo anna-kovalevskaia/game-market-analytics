@@ -29,7 +29,8 @@ class SteamPowerClient:
     TAG_PATH = "/app/"
     APPID_RE = re.compile(r"/apps/(\d+)/")
     APPTAG_RE = re.compile(r"InitAppTagModal\(\s*\d+\s*,\s*(\[.*?\])\s*,", re.S)
-    REVIEWS_PER_PAGE = 0
+    REVIEWS_PER_PAGE = 100
+    REVIEWS_PAGES = 3
     COUNTRY = ""
     LANGUAGE = "en"
     DATE_FORMATS = ("%b %d, %Y", "%d %b, %Y", "%d %B, %Y", "%B %d, %Y")
@@ -163,6 +164,35 @@ class SteamPowerClient:
             "total_negative": query_summary.get("total_negative", None),
             "total_reviews": query_summary.get("total_reviews", None),
         }
+
+    @classmethod
+    def _build_appreviews_details_rows(
+        cls, appid: int, data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """One raw.steampower_appreviews_details row per review on the /appreviews/ page."""
+        rows = []
+        for review in data.get("reviews") or []:
+            # Playtime lives in the author block, everything else at the top level.
+            author = review.get("author") or {}
+            rows.append(
+                {
+                    "appid": appid,
+                    "timestamp_created": review.get("timestamp_created", None),
+                    "timestamp_updated": review.get("timestamp_updated", None),
+                    "voted_up": review.get("voted_up", None),
+                    "language": review.get("language", None),
+                    "steam_purchase": review.get("steam_purchase", None),
+                    "received_for_free": review.get("received_for_free", None),
+                    "written_during_early_access": review.get("written_during_early_access", None),
+                    "refunded": review.get("refunded", None),
+                    "primarily_steam_deck": review.get("primarily_steam_deck", None),
+                    "playtime_at_review": author.get("playtime_at_review", None),
+                    "playtime_forever": author.get("playtime_forever", None),
+                    "playtime_last_two_weeks": author.get("playtime_last_two_weeks", None),
+                    "last_played": author.get("last_played", None),
+                }
+            )
+        return rows
 
     @classmethod
     def _build_apptag_rows(cls, appid: int, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -306,7 +336,7 @@ class SteamPowerClient:
         delay_seconds: float,
         appids: list[int],
         batch_size: int = 500,
-    ) -> Iterator[list[dict[str, Any]]]:
+    ) -> Iterator[tuple[list[dict[str, Any]], list[dict[str, Any]]]]:
         """Read /appreviews/"""
         if not appids:
             raise SteamPowerParameterError("appids must not be empty")
@@ -314,6 +344,7 @@ class SteamPowerClient:
             raise SteamPowerParameterError(f"appid must be >= 1, got {appids}")
 
         appreviews_lst: list[dict[str, Any]] = []
+        appreviews_details_lst: list[dict[str, Any]] = []
 
         logger.info("Steam appreviews: reading %s appids, batch_size=%s", len(appids), batch_size)
 
@@ -321,24 +352,43 @@ class SteamPowerClient:
             if position > 0 and delay_seconds:
                 time.sleep(delay_seconds)
 
-            result = self._get(
-                self.REVIEWS_PATH + str(appid),
-                {
-                    "json": 1,
-                    "cc": self.COUNTRY,
-                    "l": self.LANGUAGE,
-                    "num_per_page": self.REVIEWS_PER_PAGE,
-                },
-            )
+            cursor_prev = ""
+            cursor = "*"
+            first_page: dict[str, Any] = {}
+            for page in range(self.REVIEWS_PAGES):
+                if cursor_prev == cursor:
+                    break
 
-            appreviews_lst.append(self._build_appreviews_row(appid, result))
+                result = self._get(
+                    self.REVIEWS_PATH + str(appid),
+                    {
+                        "json": 1,
+                        "cc": self.COUNTRY,
+                        "l": self.LANGUAGE,
+                        "filter": "recent",
+                        "num_per_page": self.REVIEWS_PER_PAGE,
+                        "cursor": cursor,
+                    },
+                )
+                # get summary appdetails
+                if page == 0:
+                    first_page = result
+
+                cursor_prev = cursor
+                cursor = result.get("cursor")
+                appreviews_details_lst.extend(self._build_appreviews_details_rows(appid, result))
+
+                if delay_seconds:
+                    time.sleep(delay_seconds)
+
+            appreviews_lst.append(self._build_appreviews_row(appid, first_page))
 
             if len(appreviews_lst) >= batch_size:
-                yield appreviews_lst
-                appreviews_lst = []
+                yield appreviews_lst, appreviews_details_lst
+                appreviews_lst, appreviews_details_lst = [], []
 
         if appreviews_lst:
-            yield appreviews_lst
+            yield appreviews_lst, appreviews_details_lst
 
     def steampower_get_apptag(
         self,

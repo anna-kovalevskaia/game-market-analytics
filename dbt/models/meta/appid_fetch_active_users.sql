@@ -35,11 +35,11 @@ UNION DISTINCT
 SELECT appid
 FROM players
 ORDER BY last_player_count DESC, appid
-LIMIT 500 -- to update incrementally and avoid too many requests and the time limit
+LIMIT 1000 -- to update incrementally and avoid too many requests and the time limit
 
 UNION DISTINCT
 -- games not polled for the longest time
 SELECT appid
 FROM players
 ORDER BY p_last_update, appid
-LIMIT 100 -- to update incrementally and avoid too many requests and the time limit
+LIMIT 1000 -- to update incrementally and avoid too many requests and the time limit

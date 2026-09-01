@@ -18,31 +18,36 @@ appids AS (
 ),
 specials AS (
     SELECT
-        sp.appid                AS appid,
-        toDate(sp.last_update, 'UTC')  AS last_upd
-    FROM {{ ref('stg_steampower_specials') }} AS sp
-    LEFT ANTI JOIN (-- Skip specials appids whose price was already refreshed today
-        SELECT appid
-        FROM {{ ref('stg_steampower_price') }}
-        WHERE toDate(last_update, 'UTC') = toDate('{{ airflow_run_date() }}', 'UTC')
-    ) as pr
-        ON sp.appid = pr.appid
-    LEFT ANY JOIN appids AS ap
-        ON ap.appid = sp.appid
-    WHERE ap.success OR ap.appid = 0
-    ORDER BY sp.appid, sp.last_update DESC
-    LIMIT 2 BY sp.appid
+        appid,
+        'discounts and special offers' AS reason
+    FROM (
+        SELECT
+            sp.appid                AS appid,
+            toDate(sp.last_update, 'UTC')  AS last_upd
+        FROM {{ ref('stg_steampower_specials') }} AS sp
+        LEFT ANTI JOIN (-- Skip specials appids whose price was already refreshed today
+            SELECT appid
+            FROM {{ ref('stg_steampower_price') }}
+            WHERE toDate(last_update, 'UTC') = toDate('{{ airflow_run_date() }}', 'UTC')
+        ) as pr
+            ON sp.appid = pr.appid
+        LEFT ANY JOIN appids AS ap
+            ON ap.appid = sp.appid
+        WHERE ap.success OR ap.appid = 0
+        ORDER BY sp.appid, sp.last_update DESC
+        LIMIT 2 BY sp.appid
+    )
+    GROUP BY appid
+    HAVING (
+            max(last_upd) - min(last_upd) = 0 -- special offer just started
+            OR max(last_upd) - min(last_upd) > 5 -- special offer ended and restarted
+    )
+        AND max(last_upd) = toDate('{{ airflow_run_date() }}', 'UTC')
 )
 SELECT
     appid,
-    'discounts and special offers' AS reason
+    reason
 FROM specials
-GROUP BY appid
-HAVING (
-        max(last_upd) - min(last_upd) = 0 -- special offer just started
-        OR max(last_upd) - min(last_upd) > 5 -- special offer ended and restarted
-)
-    AND max(last_upd) = toDate('{{ airflow_run_date() }}', 'UTC')
 
 UNION ALL
 
@@ -52,7 +57,7 @@ SELECT
 FROM {{ ref('stg_steampower_appid') }} AS a
 LEFT ANTI JOIN appids AS ap
     ON a.appid = ap.appid
-LEFT ANTI JOIN {{ ref('stg_steampower_specials') }} AS sp
+LEFT ANTI JOIN specials AS sp
     ON a.appid = sp.appid
 ORDER BY a.last_update DESC, appid
 LIMIT 2000 -- to incremental update and avoid too many requests and time limit
