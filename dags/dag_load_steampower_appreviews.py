@@ -21,8 +21,20 @@ from data_models.steampower_appreviews_details import (
 )
 
 TABLE_CHECKS = (
-    (SteamPowerAppreviewsTable, Check()),
-    (SteamPowerAppreviewsDetailsTable, Check()),
+    (
+        SteamPowerAppreviewsTable,
+        Check(
+            WARN_THRESHOLD=0.2,
+            ERROR_THRESHOLD=3,
+        ),
+    ),
+    (
+        SteamPowerAppreviewsDetailsTable,
+        Check(
+            WARN_THRESHOLD=0.2,
+            ERROR_THRESHOLD=3,
+        ),
+    ),
 )
 
 
@@ -107,7 +119,7 @@ def update_raw_dq_metrics_states(run_id_path: str, metrics: list[dict]) -> None:
 
 @dag(
     dag_id="steamappreviews_raw_data",
-    schedule="0 */2 * * *",
+    schedule="40 */2 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

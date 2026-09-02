@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS raw.steampower_appreviews_details (
     ver Int64 MATERIALIZED -toUnixTimestamp64Milli(last_update)
 )
 ENGINE = ReplacingMergeTree(ver)
-PARTITION BY toStartOfMonth(timestamp_created)
+PARTITION BY toStartOfMonth(last_update)
 ORDER BY (appid, row_hash)

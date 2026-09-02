@@ -6,13 +6,14 @@
 }}
 
 WITH
-appids AS (-- success can be both 0 and 1 for an appid. We want only the last one.
+appids AS (-- success can be both 0 and 1 for an appid. We want only 1.
     SELECT
         appid,
+        argMax(toDate(release_date), last_update) AS release_date,
         max(last_update) AS a_last_update
     FROM {{ ref('stg_steampower_appdetails') }}
     GROUP BY appid
-    HAVING argMax(success, last_update)=1
+    HAVING argMax(success)=1
 ),
 players AS (
     SELECT
@@ -41,5 +42,20 @@ UNION DISTINCT
 -- games not polled for the longest time
 SELECT appid
 FROM players
+JOIN appids
+USING (appid)
+WHERE dateDiff('month', release_date, a_last_update) < 6
+    OR last_player_count > 0
 ORDER BY p_last_update, appid
-LIMIT 1000 -- to update incrementally and avoid too many requests and the time limit
+LIMIT 1800 -- to update incrementally and avoid too many requests and the time limit
+
+UNION DISTINCT
+-- games not polled for the longest time and no player count yet
+SELECT appid
+FROM players
+JOIN appids
+USING (appid)
+WHERE dateDiff('month', release_date, a_last_update) >= 6
+    AND last_player_count = 0
+ORDER BY p_last_update, appid
+LIMIT 200 -- to update incrementally and avoid too many requests and the time limit

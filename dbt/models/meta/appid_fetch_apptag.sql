@@ -6,13 +6,13 @@
 }}
 
 WITH
-appids AS (-- appid can have both 0 & 1 values. We want only the last ones.
+appids AS (-- appid can have both 0 & 1 values. We want only 1.
     SELECT
         appid, 
         max(last_update) AS a_last_update
     FROM {{ ref('stg_steampower_appdetails') }}
     GROUP BY appid
-    HAVING argMax(success, last_update)=1
+    HAVING argMax(success)=1
 ),
 tags AS (
     SELECT
@@ -23,8 +23,7 @@ tags AS (
 )
 -- never polled
 SELECT
-    appid,
-    'never polled' AS reson
+    appid
 FROM appids
 LEFT ANTI JOIN tags
 USING (appid)
@@ -34,8 +33,8 @@ LIMIT 2000 -- to incremental update and avoid too many requests and time limit
 UNION ALL
 -- games not polled for the longest time
 SELECT
-    appid,
-    'not polled for the longest time' AS reson
+    appid
 FROM tags
+WHERE toDate(t_last_update) != toDate(now(), 'UTC')
 ORDER BY t_last_update, appid
 LIMIT 1500 -- to incremental update and avoid too many requests and time limit
