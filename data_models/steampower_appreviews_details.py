@@ -45,5 +45,5 @@ class TableConfig:
     schema: str = "raw"
     table_name: str = "steampower_appreviews_details"
     order_by = ("appid", "row_hash")
-    partition_by = "toStartOfMonth(timestamp_created)"
+    partition_by = "toStartOfMonth(last_update)"
     engine = "ReplacingMergeTree(ver)"

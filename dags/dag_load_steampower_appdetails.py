@@ -121,7 +121,7 @@ def update_raw_dq_metrics_states(run_id_path: str, metrics: list[dict]) -> None:
 
 @dag(
     dag_id="steamappdetails_raw_data",
-    schedule="0 */2 * * *",
+    schedule="30 1 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

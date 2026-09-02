@@ -27,7 +27,7 @@ def steamplayers_extract() -> str:
 
     isteam_client = ISteamClient(timeout=10)
     appids = get_appids_to_fetch(ClickHouseClient())
-    params = {"delay_seconds": 1.1, "appids": appids, "batch_size": 1000}
+    params = {"delay_seconds": 0.5, "appids": appids, "batch_size": 1000}
     steamplayers_extract_to_tmp(client=isteam_client, run_id_path=run_id_path, **params)
 
     return str(run_id_path)
@@ -58,7 +58,7 @@ def steamplayers_insert_to_clickhouse(run_id_path: str) -> None:
 
 @dag(
     dag_id="steamplayers_raw_data",
-    schedule="0 */2 * * *",
+    schedule="0 */1 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
