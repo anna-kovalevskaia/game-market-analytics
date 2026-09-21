@@ -385,7 +385,7 @@ class SteamPowerClient:
                 if delay_seconds:
                     time.sleep(delay_seconds)
 
-            # The first page failed: an all-NULL summary would land in the history as a fake state change.
+            # First page failed: an all-NULL summary would read as a fake state change.
             if not first_page:
                 continue
             appreviews_lst.append(self._build_appreviews_row(appid, first_page))

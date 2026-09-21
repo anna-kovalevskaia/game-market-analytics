@@ -1,4 +1,3 @@
-
 from airflow.providers.standard.triggers.file import FileDeleteTrigger
 from airflow.sdk import Asset, AssetWatcher
 
@@ -12,12 +11,5 @@ def table_asset_watcher(file_path: str, asset_name: str, asset_watcher_name: str
     trigger_filedelete = FileDeleteTrigger(filepath=file_path, poke_interval=30)
     return Asset(
         asset_name,
-        watchers=[
-            AssetWatcher(
-                name=asset_watcher_name,
-                trigger=trigger_filedelete
-            )
-        ],
-
+        watchers=[AssetWatcher(name=asset_watcher_name, trigger=trigger_filedelete)],
     )
-
