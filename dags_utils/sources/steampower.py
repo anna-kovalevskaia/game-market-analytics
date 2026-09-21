@@ -110,6 +110,7 @@ class SteamPowerClient:
             "name": data.get("name", ""),
             "required_age": data.get("required_age", None),
             "is_free": data.get("is_free", None),
+            "dlc": data.get("dlc", []),
             "supported_languages": data.get("supported_languages", ""),
             "website": data.get("website", ""),
             "pc_requirements": (data.get("pc_requirements") or {}).get("minimum", ""),
@@ -348,9 +349,7 @@ class SteamPowerClient:
 
         logger.info("Steam appreviews: reading %s appids, batch_size=%s", len(appids), batch_size)
 
-        for position, appid in enumerate(appids):
-            if position > 0 and delay_seconds:
-                time.sleep(delay_seconds)
+        for appid in appids:
 
             cursor_prev = ""
             cursor = "*"
@@ -359,17 +358,22 @@ class SteamPowerClient:
                 if cursor_prev == cursor:
                     break
 
-                result = self._get(
-                    self.REVIEWS_PATH + str(appid),
-                    {
-                        "json": 1,
-                        "cc": self.COUNTRY,
-                        "l": self.LANGUAGE,
-                        "filter": "recent",
-                        "num_per_page": self.REVIEWS_PER_PAGE,
-                        "cursor": cursor,
-                    },
-                )
+                try:
+                    result = self._get(
+                        self.REVIEWS_PATH + str(appid),
+                        {
+                            "json": 1,
+                            "cc": self.COUNTRY,
+                            "l": self.LANGUAGE,
+                            "filter": "recent",
+                            "num_per_page": self.REVIEWS_PER_PAGE,
+                            "cursor": cursor,
+                        },
+                    )
+                except SteamPowerConnectionError:
+                    # Keep the pages already fetched for this game and move on to the next one.
+                    logger.warning("Steam appreviews: page %s failed for appid=%s", page, appid)
+                    break
                 # get summary appdetails
                 if page == 0:
                     first_page = result
@@ -381,6 +385,9 @@ class SteamPowerClient:
                 if delay_seconds:
                     time.sleep(delay_seconds)
 
+            # The first page failed: an all-NULL summary would land in the history as a fake state change.
+            if not first_page:
+                continue
             appreviews_lst.append(self._build_appreviews_row(appid, first_page))
 
             if len(appreviews_lst) >= batch_size:

@@ -12,3 +12,5 @@ dags_utils/note.md
 tmp/
 .vscode/
 logs/
+clickhouse_ddl/raw
+clickhouse_ddl/raw_dq

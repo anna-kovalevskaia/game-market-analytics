@@ -35,6 +35,20 @@ class ClickHouseClient:
         logger.info("ClickHouse execute: %s", sql[:200])
         self._client.command(sql)
 
+    def get_column_details(self, schema: str, table_name: str) -> list[tuple[str, str]]:
+        """Model-owned columns only: row_hash and ver are MATERIALIZED and compute themselves."""
+        table = self.sql_to_arrow(
+            f"SELECT column, type FROM system.columns "
+            f"WHERE database = '{schema}' AND table = '{table_name}'"
+            f"AND default_kind != 'MATERIALIZED'"
+            f"ORDER BY position"
+        )
+        return list(zip(table["column"].to_pylist(), table["type"].to_pylist(), strict=True))
+
+    def exchange_tables(self, from_table: str, to_table: str) -> None:
+        exchange_query = f"EXCHANGE TABLES {from_table} AND {to_table}"
+        self.execute_sql(exchange_query)
+
     def sql_to_arrow(self, sql: str) -> pa.Table:
         """Converts a SQL query to an Arrow table."""
         logger.info("ClickHouse execute: %s", sql[:200])

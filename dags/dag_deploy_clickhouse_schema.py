@@ -1,79 +1,64 @@
-"""
-DEPRECATED — deploying ClickHouse schemas from an Airflow DAG was a wrong turn;
-see dags_utils/schema_deploy.py for the reasoning. The file keeps the words "dag"
-and "airflow" so DagBag does not skip it silently.
+from pathlib import Path
 
-Left registered for now: switching it off is a deliberate step the owner takes,
-and unregistering it here would hide that decision inside a refactor.
-"""
-
-import logging
-from datetime import timedelta
-
-from airflow.sdk import Variable, dag, task
+from airflow.sdk import dag, task, AssetAny
 from pendulum import datetime
 
+from dags_utils.commons.assets import table_asset_watcher
 from dags_utils.commons.clickhouse import ClickHouseClient
-from dags_utils.schema_deploy import check_main_new_commit, deploy_models, get_changed_models
-from dags_utils.sources.github import GitHubClient
-
-logger = logging.getLogger(__name__)
-
-
-@task.short_circuit
-def wait_for_main_changes() -> dict[str, str] | bool:
-    """Poll main for a new commit. Detection only — no side effects."""
-    last_sha = Variable.get("schema_deploy_last_sha")
-
-    client = GitHubClient()
-
-    result = check_main_new_commit(client, last_sha=last_sha)
-    if result is None:
-        return False
-
-    current_sha, previous_sha = result
-    logger.info("New commit on main: %s -> %s", previous_sha, current_sha)
-
-    return {"base_sha": previous_sha, "head_sha": current_sha}
+from dags_utils.commons.model_types import model_to_clickhouse_columns
+from dags_utils.create_raw_ddl_from_data_model import get_models_details, DEPLOY_MARKER
 
 
 @task
-def deploy_changed_schemas(sha_pair: dict[str, str]) -> None:
+def get_changed_file_path() -> list[str]:
 
-    github_client = GitHubClient()
-    models = get_changed_models(
-        github_client, base_sha=sha_pair["base_sha"], head_sha=sha_pair["head_sha"]
-    )
+    ch_client = ClickHouseClient()
+    changed_models = []
+    for path in Path("data_models").glob("*.py"):
+        if path.stem.startswith("_"):
+            continue
 
-    if not models:
-        logger.info("Commit diff touched data_models/ but nothing to deploy")
-        return
+        model, table_config = get_models_details(path.stem)
+        schema, table = table_config.schema, table_config.table_name
+        origin = dict(ch_client.get_column_details(schema, table))
+        origin.pop("last_update", None)
+        changed = dict(model_to_clickhouse_columns(model))
 
-    clickhouse_client = ClickHouseClient()
-    deploy_models(clickhouse_client, models)
+        if origin != changed:
+            changed_models.append(f"{schema}/{table}")
+    return changed_models
 
 
 @task
-def record_deployed_sha(sha_pair: dict[str, str]) -> None:
+def apply_ddl(changed_models: list[str]) -> None:
+    ch_client = ClickHouseClient()
 
-    head_sha = sha_pair["head_sha"]
-    Variable.set("schema_deploy_last_sha", head_sha)
-    logger.info("Recorded deployed SHA: %s", head_sha)
+    for changed_model in changed_models:
+        path = Path("clickhouse_ddl") / changed_model
+        files = list(path.glob("*.sql"))
+
+        last_num = max(int(f.name.split("_", 1)[0]) for f in files)
+        steps = sorted(f for f in files if f.name.startswith(f"{last_num}_"))
+
+        for step in steps:
+            ch_client.execute_sql(step.read_text(encoding="utf-8"))
 
 
 @dag(
-    dag_id="deploy_clickhouse_schemas",
-    schedule=timedelta(minutes=30),
+    dag_id="create_change_ddl",
+    schedule=[
+        table_asset_watcher(
+            file_path=str(DEPLOY_MARKER),
+            asset_name="ddl_deploy",
+            asset_watcher_name="deploy_trigger",
+        )
+    ],
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=["clickhouse", "schema", "ops"],
 )
-def deploy_clickhouse_schemas():
-    sha_pair = wait_for_main_changes()
-    deployed = deploy_changed_schemas(sha_pair=sha_pair)
-    recorded = record_deployed_sha(sha_pair=sha_pair)
-    deployed >> recorded
+def create_change_proccess():
+    apply_ddl(get_changed_file_path())
 
 
-deploy_clickhouse_schemas()
+create_change_proccess()

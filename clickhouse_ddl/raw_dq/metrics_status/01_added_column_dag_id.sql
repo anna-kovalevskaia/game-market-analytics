@@ -1,1 +1,0 @@
-ALTER TABLE raw_dq.metrics_status ADD COLUMN dag_id LowCardinality(String);

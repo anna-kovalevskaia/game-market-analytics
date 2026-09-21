@@ -1,11 +1,11 @@
-
+from typing import Annotated
 from pydantic import BaseModel, ConfigDict
 
 
 class MetricsStatusModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    dag_id: str
+    dag_id: Annotated[str, "LowCard"]
     schema_name: str
     table_name: str
     metrics_name: str
