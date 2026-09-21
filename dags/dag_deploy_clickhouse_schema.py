@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from airflow.sdk import dag, task, AssetAny
+from airflow.sdk import dag, task
 from pendulum import datetime
 
 from dags_utils.commons.assets import table_asset_watcher
 from dags_utils.commons.clickhouse import ClickHouseClient
 from dags_utils.commons.model_types import model_to_clickhouse_columns
-from dags_utils.create_raw_ddl_from_data_model import get_models_details, DEPLOY_MARKER
+from dags_utils.create_raw_ddl_from_data_model import DEPLOY_MARKER, get_models_details
 
 
 @task
