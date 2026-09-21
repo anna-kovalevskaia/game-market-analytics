@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 
 from airflow.sdk import Variable, dag, get_current_context, task
@@ -119,7 +120,7 @@ def update_raw_dq_metrics_states(run_id_path: str, metrics: list[dict]) -> None:
 
 @dag(
     dag_id="steamappreviews_raw_data",
-    schedule="40 */2 * * *",
+    schedule=timedelta(hours=2, minutes=40),
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

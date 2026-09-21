@@ -13,7 +13,7 @@ appids AS (-- success can be both 0 and 1 for an appid. We want only 1.
         max(last_update) AS a_last_update
     FROM {{ ref('stg_steampower_appdetails') }}
     GROUP BY appid
-    HAVING argMax(success)=1
+    HAVING max(success)=1
 ),
 players AS (
     SELECT

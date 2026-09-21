@@ -81,6 +81,9 @@ def model_to_clickhouse_columns(model: type[BaseModel]) -> list[tuple[str, str]]
         if optional and inner not in _ARRAY_TYPES:
             ch_type = f"Nullable({ch_type})"
 
+        if "LowCard" in field.metadata:
+            ch_type = ch_type.replace("String", "LowCardinality(String)")
+
         columns.append((name, ch_type))
 
     logger.info("ClickHouse columns resolved for %s: %s", model.__name__, columns)

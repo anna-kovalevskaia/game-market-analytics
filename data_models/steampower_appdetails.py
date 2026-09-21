@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
+  
 class SteamPowerAppdetailsModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -12,6 +12,7 @@ class SteamPowerAppdetailsModel(BaseModel):
     name: str | None = Field(default=None)
     required_age: int | None = Field(default=None, ge=0)
     is_free: bool | None = Field(default=None)
+    dlc: list[int] | None = Field(default=None)
     supported_languages: str | None = Field(default=None)
     website: str | None = Field(default=None)
     pc_requirements: str | None = Field(default=None)
@@ -20,9 +21,9 @@ class SteamPowerAppdetailsModel(BaseModel):
     developers: list[str] | None = Field(default=None)
     publishers: list[str] | None = Field(default=None)
     categories_id: list[int] | None = Field(default=None)
-    categories_description: list[str] | None = Field(default=None)
-    genres_id: list[str] | None = Field(default=None)
-    genres_description: list[str] | None = Field(default=None)
+    categories_description: Annotated[list[str] | None, "LowCard"] = Field(default=None)
+    genres_id: Annotated[list[str] | None, "LowCard"] = Field(default=None)
+    genres_description: Annotated[list[str] | None, "LowCard"] = Field(default=None)
     release_date: datetime | None = Field(default=None)
 
 
