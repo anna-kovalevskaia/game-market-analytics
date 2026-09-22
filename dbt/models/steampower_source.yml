@@ -47,6 +47,12 @@ sources:
             description: 'Steam application identifier.'
           - name: success
             description: 'False when appdetails returned no data (delisted or region-blocked).'
+          - name: dlc
+            description: >
+              Appids of the add-ons sold on top of this game. Its length is the
+              add-on count, free of any extra request. Beware of bundle editions:
+              a Complete Edition already includes its expansions, so they are not
+              listed here and the count reads as zero.
           - name: row_hash
             description: 'Row hash over the card fields, used to detect changes.'
           - name: last_update
@@ -154,6 +160,71 @@ sources:
             description: 'Row hash over the review fields, used to detect edits.'
           - name: last_update
             description: 'When this review state was first seen.'
+
+      - name: steampower_dlc_details
+        description: >
+          Add-on cards fetched from the dlc array of the parent game, one row per
+          distinct state of an add-on. The type column matters: the array also
+          carries soundtracks and other non-game items, so content add-ons have to
+          be filtered explicitly. Genres, developers and publishers are deliberately
+          not stored - on Steam they merely repeat the parent, so they are taken
+          from the game via appid.
+        columns:
+          - name: appid
+            description: 'Steam application identifier of the parent game.'
+          - name: dlc_appid
+            description: 'Steam application identifier of the add-on itself.'
+          - name: dlc_name
+            description: 'Add-on title as returned for l=en.'
+          - name: type
+            description: "Steam item type: 'dlc' for content, 'music' for soundtracks."
+          - name: is_free
+            description: 'Whether the add-on is free, which tells a missing price from a failed fetch.'
+          - name: release_date
+            description: 'Release date; empty for announced add-ons whose date Steam gives as text.'
+          - name: platform_windows
+            description: 'Whether the add-on runs on Windows.'
+          - name: platform_mac
+            description: 'Whether the add-on runs on macOS.'
+          - name: platform_linux
+            description: 'Whether the add-on runs on Linux.'
+          - name: row_hash
+            description: 'Row hash over the add-on fields, used to detect changes.'
+          - name: last_update
+            description: 'When this add-on state was first seen.'
+
+      - name: steampower_dlc_price
+        description: >
+          Price observations for add-ons, mirroring steampower_price. The date is
+          part of the sorting key, so one add-on gives one row per day its price was
+          seen - this is the discount history of paid content. For a free-to-play
+          game it is one of only two visible monetisation signals, the other being
+          the In-App Purchases category.
+        columns:
+          - name: appid
+            description: 'Steam application identifier of the parent game.'
+          - name: dlc_appid
+            description: 'Steam application identifier of the add-on itself.'
+          - name: row_hash
+            description: 'Row hash over currency and the price fields.'
+          - name: last_update
+            description: 'Observation timestamp; its date makes the row unique per day.'
+
+      - name: steampower_dlc_packages
+        description: >
+          Purchase options of an add-on from package_groups, one row per package.
+          Mirrors steampower_packages, with packageid part of the key.
+        columns:
+          - name: appid
+            description: 'Steam application identifier of the parent game.'
+          - name: dlc_appid
+            description: 'Steam application identifier of the add-on itself.'
+          - name: packageid
+            description: 'Steam package identifier.'
+          - name: row_hash
+            description: 'Row hash over the package fields.'
+          - name: last_update
+            description: 'When this package state was first seen.'
 
       - name: steampower_active_users
         description: >

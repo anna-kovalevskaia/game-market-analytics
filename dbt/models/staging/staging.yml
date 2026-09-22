@@ -79,6 +79,131 @@ models:
       - name: last_update
         description: 'Exact observation timestamp within the hour.'
 
+  - name: stg_steampower_appdetails
+    description: >
+      Deduplicated per-game cards: one row per unique (appid, row_hash) pair, so
+      an unchanged card collapses while every edit of the store page stays as its
+      own version. Rows with success = 0 are kept: the card was unreachable at
+      that moment, which is itself an observation.
+    columns:
+      - name: success
+        description: 'False when appdetails returned no data (delisted or region-blocked).'
+      - name: appid
+        description: 'Steam application identifier.'
+      - name: name
+        description: 'Game title as returned for l=en.'
+      - name: required_age
+        description: 'Age gate declared by the publisher; 0 when none is set.'
+      - name: is_free
+        description: 'Whether the store price is zero, which separates free-to-play from premium.'
+      - name: dlc
+        description: >
+          Appids of the add-ons sold on top of this game; its length is the add-on
+          count. Bundle editions list none, because their expansions are included.
+      - name: supported_languages
+        description: 'Language list as an HTML string, with asterisks marking full audio support.'
+      - name: website
+        description: 'Official site of the game.'
+      - name: pc_requirements
+        description: 'Minimum PC requirements as an HTML string.'
+      - name: mac_requirements
+        description: 'Minimum Mac requirements as an HTML string.'
+      - name: linux_requirements
+        description: 'Minimum Linux requirements as an HTML string.'
+      - name: developers
+        description: 'Studios credited with development.'
+      - name: publishers
+        description: 'Publishers of the game.'
+      - name: categories_id
+        description: 'Steam category identifiers, e.g. multiplayer or controller support.'
+      - name: categories_description
+        description: 'Category labels; the In-App Purchases one marks games monetised inside.'
+      - name: genres_id
+        description: 'Steam genre identifiers set by the publisher, not by players.'
+      - name: genres_description
+        description: 'Genre labels set by the publisher; compare with apptag to see perception.'
+      - name: release_date
+        description: 'Release date; empty for announced games whose date Steam gives as text.'
+      - name: row_hash
+        description: 'Row hash over the card fields, used to detect changes.'
+      - name: last_update
+        description: 'When this card state was first seen.'
+
+  - name: stg_steampower_dlc_details
+    description: >
+      Deduplicated add-on cards: one row per unique (appid, dlc_appid, row_hash)
+      triple. Grain is one row per add-on per distinct state. Filter on type before
+      counting add-ons - soundtracks share the dlc array with content.
+    columns:
+      - name: appid
+        description: 'Steam application identifier of the parent game.'
+      - name: dlc_appid
+        description: 'Steam application identifier of the add-on itself.'
+      - name: dlc_name
+        description: 'Add-on title as returned for l=en.'
+      - name: type
+        description: "Steam item type: 'dlc' for content, 'music' for soundtracks."
+      - name: is_free
+        description: 'Whether the add-on is free, which tells a missing price from a failed fetch.'
+      - name: release_date
+        description: >
+          Release date of the add-on; against the game release date it gives the
+          time to first add-on and the cadence of later ones.
+      - name: platform_windows
+        description: 'Whether the add-on runs on Windows.'
+      - name: platform_mac
+        description: 'Whether the add-on runs on macOS.'
+      - name: platform_linux
+        description: 'Whether the add-on runs on Linux.'
+      - name: row_hash
+        description: 'Row hash over the add-on fields, used to detect changes.'
+      - name: last_update
+        description: 'When this add-on state was first seen.'
+
+  - name: stg_steampower_dlc_price
+    description: >
+      Daily price observations of add-ons: one row per add-on per day its price was
+      seen. Summed against the base game price, it gives the true cost of owning
+      everything; for free-to-play titles it is the main visible revenue signal.
+    columns:
+      - name: appid
+        description: 'Steam application identifier of the parent game.'
+      - name: dlc_appid
+        description: 'Steam application identifier of the add-on itself.'
+      - name: currency
+        description: 'Currency of the prices, decided by the country the request used.'
+      - name: price_initial
+        description: 'Price before discount, in cents.'
+      - name: price_final
+        description: 'Price after discount, in cents.'
+      - name: discount_percent
+        description: 'Discount, percent.'
+      - name: row_hash
+        description: 'Row hash over currency and the price fields.'
+      - name: last_update
+        description: 'Exact observation timestamp within the day.'
+
+  - name: stg_steampower_dlc_packages
+    description: >
+      Deduplicated purchase options of add-ons: one row per unique
+      (appid, dlc_appid, packageid, row_hash). Grain is one row per package, not
+      per add-on.
+    columns:
+      - name: appid
+        description: 'Steam application identifier of the parent game.'
+      - name: dlc_appid
+        description: 'Steam application identifier of the add-on itself.'
+      - name: packageid
+        description: 'Steam package identifier.'
+      - name: package_option_text
+        description: 'Label of the purchase option as shown in the store.'
+      - name: package_price_with_discount
+        description: 'Price of the package after discount, in cents.'
+      - name: row_hash
+        description: 'Row hash over the package fields.'
+      - name: last_update
+        description: 'When this package state was first seen.'
+
   - name: stg_steampower_apptag
     description: >
       Deduplicated user tags: one row per unique (appid, row_hash) pair, so an
