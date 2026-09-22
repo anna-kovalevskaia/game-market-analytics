@@ -11,6 +11,7 @@ SELECT
     name,
     required_age,
     is_free,
+    dlc,
     supported_languages,
     website,
     pc_requirements,
