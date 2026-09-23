@@ -219,7 +219,7 @@ class SteamPowerClient:
             raw = result.get(str(dlc_appid)) or {}
             data = raw.get("data") or {}
 
-            if not raw.get("success"):
+            if not raw.get("success") or not data.get("fullgame", {}).get("appid"):
                 logger.warning("Steam dlc: no data for dlc_appid=%s", dlc_appid)
                 continue
 
